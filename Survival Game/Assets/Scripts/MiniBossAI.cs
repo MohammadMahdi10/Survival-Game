@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Timers;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -13,6 +14,10 @@ public class MiniBossAI : MonoBehaviour
     public float attackRange = 2f;
     public float attackCooldown = 1f;
     private float nextAttackTime = 0f;
+
+    [Header("Weapon Settings")]
+    public Transform swordTransform;
+    private bool isAttacking = false;
 
     private NavMeshAgent agent;
 
@@ -43,9 +48,9 @@ public class MiniBossAI : MonoBehaviour
 
             LookAtTarget();
 
-            if (Time.time >= nextAttackTime)
+            if (Time.time >= nextAttackTime && !isAttacking)
             {
-                PerformAttack();
+                StartCoroutine(SwingSwordRoutine());
                 nextAttackTime = Time.time + attackCooldown;
             }
         }
@@ -56,15 +61,43 @@ public class MiniBossAI : MonoBehaviour
         direction.y = 0;
         // Keep the y-axis rotation unchanged
 
+        // Slerp: Smoothly rotate the MiniBoss towards the player
         if (direction != Vector3.zero) {
             Quaternion lookRotation = Quaternion.LookRotation(direction);
             transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * 5f);
         }
     }
 
-    // Placeholder for attack logic
+    IEnumerator SwingSwordRoutine() {
+        isAttacking = true;
 
-    void PerformAttack() { 
-        Debug.Log("MiniBoss attacks the player!");
+        if (swordTransform != null)
+        {
+            Quaternion originalRotation = swordTransform.localRotation;
+            Quaternion attackRotation = originalRotation * Quaternion.Euler(-90f, 0f, 0f);
+
+            float duration = 0.5f;
+            float elapsed = 0f;
+
+            while (elapsed < duration)
+            {
+                swordTransform.localRotation = Quaternion.Slerp(originalRotation, attackRotation, elapsed / duration);
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(0.2f); // Wait for a short moment before returning to original position
+
+            elapsed = 0f;
+            while (elapsed < duration)
+            {
+                swordTransform.localRotation = Quaternion.Slerp(attackRotation, originalRotation, elapsed / duration);
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            swordTransform.localRotation = originalRotation; // Ensure the sword returns to its original rotation
+        }
+        isAttacking = false;
     }
 }
