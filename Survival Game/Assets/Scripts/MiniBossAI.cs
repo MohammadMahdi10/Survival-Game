@@ -11,7 +11,7 @@ public class MiniBossAI : MonoBehaviour
     public Transform playerTarget;
 
     [Header("Combat Settings")]
-    public float attackRange = 2f;
+    public float attackRange = 3.2f;
     public float attackCooldown = 1f;
     private float nextAttackTime = 0f;
 
