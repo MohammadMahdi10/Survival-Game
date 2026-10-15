@@ -262,7 +262,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &57843508
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3650,6 +3650,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5198186826217862155, guid: b92fd0e5486e33441934988a03e5fc7a, type: 3}
+      propertyPath: darkOverlay
+      value: 
+      objectReference: {fileID: 57843507}
     - target: {fileID: 5379116496965044870, guid: b92fd0e5486e33441934988a03e5fc7a, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0

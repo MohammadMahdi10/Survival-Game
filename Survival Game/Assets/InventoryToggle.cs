@@ -1,8 +1,10 @@
+using Unity.VisualScripting.Antlr3.Runtime;
 using UnityEngine;
 
 public class InventoryToggle : MonoBehaviour
 {
     [SerializeField] private GameObject inventoryPanel;
+    [SerializeField] private GameObject darkOverlay;
 
     void Update()
     {
@@ -12,6 +14,9 @@ public class InventoryToggle : MonoBehaviour
 
     public void Toggle()
     {
-        inventoryPanel.SetActive(!inventoryPanel.activeSelf);
+        bool isOpen = !inventoryPanel.activeSelf;
+
+        inventoryPanel.SetActive(isOpen);
+        darkOverlay.SetActive(isOpen);
     }
 }
