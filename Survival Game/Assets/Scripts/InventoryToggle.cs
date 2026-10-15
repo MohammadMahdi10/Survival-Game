@@ -4,6 +4,7 @@ using UnityEngine;
 public class InventoryToggle : MonoBehaviour
 {
     [SerializeField] private GameObject inventoryPanel;
+    [SerializeField] private GameObject craftingMenu;
     [SerializeField] private GameObject darkOverlay;
 
     [SerializeField] private PlayerMovement playerMovement;
@@ -20,6 +21,7 @@ public class InventoryToggle : MonoBehaviour
         bool isOpen = !inventoryPanel.activeSelf;
 
         inventoryPanel.SetActive(isOpen);
+        craftingMenu.SetActive(isOpen);
         darkOverlay.SetActive(isOpen);
 
         if (isOpen)

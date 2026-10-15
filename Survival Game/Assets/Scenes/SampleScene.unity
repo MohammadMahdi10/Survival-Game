@@ -5052,6 +5052,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 57843507}
     - target: {fileID: 5198186826217862155, guid: b92fd0e5486e33441934988a03e5fc7a, type: 3}
+      propertyPath: craftingMenu
+      value: 
+      objectReference: {fileID: 1679323952}
+    - target: {fileID: 5198186826217862155, guid: b92fd0e5486e33441934988a03e5fc7a, type: 3}
       propertyPath: playerMovement
       value: 
       objectReference: {fileID: 1304997873}
@@ -8247,7 +8251,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1679323953
 Transform:
   m_ObjectHideFlags: 0
