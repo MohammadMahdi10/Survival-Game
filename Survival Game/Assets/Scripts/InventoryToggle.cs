@@ -6,6 +6,9 @@ public class InventoryToggle : MonoBehaviour
     [SerializeField] private GameObject inventoryPanel;
     [SerializeField] private GameObject darkOverlay;
 
+    [SerializeField] private PlayerMovement playerMovement;
+    [SerializeField] private MonoBehaviour mouseLook;
+
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.E))
@@ -18,5 +21,17 @@ public class InventoryToggle : MonoBehaviour
 
         inventoryPanel.SetActive(isOpen);
         darkOverlay.SetActive(isOpen);
+
+        if (isOpen)
+        {
+            playerMovement.StopMovement();
+        }
+
+        playerMovement.enabled = !isOpen;
+        mouseLook.enabled = !isOpen;
+
+        Cursor.lockState = isOpen ? CursorLockMode.None : CursorLockMode.Locked;
+        Cursor.visible = isOpen;
+
     }
 }
