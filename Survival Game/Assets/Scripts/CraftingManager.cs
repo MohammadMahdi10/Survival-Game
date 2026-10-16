@@ -5,6 +5,7 @@ using UnityEngine;
 public class CraftingManager : MonoBehaviour
 {
     private Dictionary<ItemType, Dictionary<ItemType, int>> recipes;
+    [SerializeField] private ResourceManager resourceManager;
 
     private void Start()
     {
@@ -39,6 +40,34 @@ public class CraftingManager : MonoBehaviour
 
         return null;
     }
+
+    public bool CanCraft(ItemType item)
+    {
+
+        Dictionary<ItemType, int> ingredients = GetRecipe(item);
+
+        if (ingredients == null)
+        {
+            return false;
+        }
+
+        foreach (var ingredient in ingredients)
+        {
+            ItemType material = ingredient.Key;
+            int requiredAmount = ingredient.Value;
+
+            int playerAmount = resourceManager.GetResourceAmount(material);
+
+            if (playerAmount < requiredAmount)
+            {
+                return false;
+            }
+        }
+
+        Debug.Log("YES");
+        return true;
+    }
+
 }
 
 
