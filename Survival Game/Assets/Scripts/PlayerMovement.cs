@@ -60,4 +60,11 @@ public class PlayerMovement : MonoBehaviour
         velocity.y += gravity * Time.deltaTime;
         controller.Move(velocity * Time.deltaTime);
     }
+
+    public void StopMovement()
+    {
+        moveInput = Vector2.zero;
+        jumpRequested = false;
+    }
+
 }
