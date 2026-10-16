@@ -7,8 +7,7 @@ public class CraftingManager : MonoBehaviour
     private Dictionary<ItemType, Dictionary<ItemType, int>> recipes;
     [SerializeField] private ResourceManager resourceManager;
 
-    private void Start()
-    {
+    private void Start() {
         recipes = new Dictionary<ItemType, Dictionary<ItemType, int>>
         {
             [ItemType.BasicSword] = new()
@@ -31,8 +30,7 @@ public class CraftingManager : MonoBehaviour
         Debug.Log("LOADED!");
     }
 
-    public Dictionary<ItemType, int> GetRecipe(ItemType item)
-    {
+    public Dictionary<ItemType, int> GetRecipe(ItemType item) { 
         if (recipes.ContainsKey(item))
         {
             return recipes[item];
@@ -41,8 +39,7 @@ public class CraftingManager : MonoBehaviour
         return null;
     }
 
-    public bool CanCraft(ItemType item)
-    {
+    public bool CanCraft(ItemType item) {
 
         Dictionary<ItemType, int> ingredients = GetRecipe(item);
 
@@ -67,6 +64,19 @@ public class CraftingManager : MonoBehaviour
         Debug.Log("YES");
         return true;
     }
+
+
+    [ContextMenu("Test Crafting With Resources")]
+    private void TestCraftingWithResources() {
+    
+        resourceManager.AddResource(ItemType.Wood, 3);
+        resourceManager.AddResource(ItemType.PlainsStone, 0);
+
+        bool canCraft = CanCraft(ItemType.BasicSword);
+
+        Debug.Log("Can craft Basic Sword: " + canCraft);
+    }
+
 
 }
 
