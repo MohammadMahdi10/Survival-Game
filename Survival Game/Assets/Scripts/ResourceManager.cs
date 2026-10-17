@@ -6,6 +6,7 @@ using UnityEngine;
 public class ResourceManager : MonoBehaviour
 {
     private Dictionary<ItemType, int> resources = new();
+    [SerializeField] private InventoryDisplay inventoryDisplay;
 
     public void AddResource(ItemType item, int amount)
     {
@@ -19,6 +20,11 @@ public class ResourceManager : MonoBehaviour
         else
         {
             resources[item] = amount;
+        }
+
+        if (inventoryDisplay != null)
+        {
+            inventoryDisplay.UpdateDisplay();
         }
     }
 

@@ -9290,6 +9290,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5d020ec57ba6a384996e0ffb46991934, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  inventoryDisplay: {fileID: 1242722302}
 --- !u!1001 &1943804949
 PrefabInstance:
   m_ObjectHideFlags: 0

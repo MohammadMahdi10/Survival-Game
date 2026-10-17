@@ -53,6 +53,7 @@ public class InventoryDisplay : MonoBehaviour {
 
         foreach (ItemType item in allItems) {
             int amount = resourceManager.GetResourceAmount(item);
+            Debug.Log(item + " amount: " + amount);
 
             for (int i = 0; i < amount; i++) {
                 if (slotIndex >= slotLabels.Count) {
