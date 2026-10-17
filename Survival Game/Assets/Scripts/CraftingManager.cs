@@ -66,6 +66,26 @@ public class CraftingManager : MonoBehaviour
     }
 
 
+    public bool CraftItem(ItemType item) {
+        if (!CanCraft(item)) {
+            return false;
+        }
+
+        Dictionary<ItemType, int> ingredients = GetRecipe(item);
+
+        foreach (var ingredient in ingredients) {
+            ItemType material = ingredient.Key;
+            int amount = ingredient.Value;
+
+            resourceManager.RemoveResource(material, amount);
+        }
+
+        resourceManager.AddResource(item, 1);
+        return true;
+    }
+
+
+
     [ContextMenu("Test Crafting With Resources")]
     private void TestCraftingWithResources() {
     

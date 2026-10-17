@@ -10,18 +10,25 @@ public class CraftingUI : MonoBehaviour
     [SerializeField] private GameObject fireSwordPage;
     [SerializeField] private GameObject bucketPage;
 
+    [SerializeField] private CraftingManager craftingManager;
+
+    private ItemType selectedRecipe;
+
     public void ShowBasicSword()
     {
+        selectedRecipe = ItemType.BasicSword;
         ShowRecipe(basicSwordPage);
     }
 
     public void ShowFireSword()
     {
+        selectedRecipe = ItemType.FireSword;
         ShowRecipe(fireSwordPage);
     }
 
     public void ShowBucket()
     {
+        selectedRecipe = ItemType.WaterBucket;
         ShowRecipe(bucketPage);
     }
 
@@ -44,4 +51,18 @@ public class CraftingUI : MonoBehaviour
         materialsScreen.SetActive(false);
         craftingScreen.SetActive(true);
     }
+    public void CraftSelectedItem()
+    {
+        bool success = craftingManager.CraftItem(selectedRecipe);
+
+        if (success)
+        {
+            Debug.Log("YES");
+        }
+        else
+        {
+            Debug.Log("NO");
+        }
+    }
+
 }
