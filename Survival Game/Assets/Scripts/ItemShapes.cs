@@ -29,6 +29,25 @@ public static class ItemShapes
     public static Vector2Int[] GetShape(ItemType item)
         => shapes.TryGetValue(item, out var s) ? s : new[] { V(0, 0) };
 
+    public static Vector2Int[] Rotate(Vector2Int[] shape, ref Vector2Int point)
+    {
+        var rotated = new Vector2Int[shape.Length];
+        int minX = int.MaxValue, minY = int.MaxValue;
+
+        for (int i = 0; i < shape.Length; i++)
+        {
+            rotated[i] = new Vector2Int(-shape[i].y, shape[i].x);
+            minX = Mathf.Min(minX, rotated[i].x);
+            minY = Mathf.Min(minY, rotated[i].y);
+        }
+
+        var shift = new Vector2Int(minX, minY);
+        for (int i = 0; i < rotated.Length; i++) rotated[i] -= shift;
+
+        point = new Vector2Int(-point.y, point.x) - shift;
+        return rotated;
+    }
+
     public static Color GetColor(ItemType item)
         => colors.TryGetValue(item, out var c) ? c : Color.white;
 }

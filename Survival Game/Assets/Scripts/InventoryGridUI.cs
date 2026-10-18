@@ -22,7 +22,10 @@ public class InventoryGridUI : MonoBehaviour
     private void Refresh()
     {
         foreach (Transform child in transform)
+        {
+            if (child.name == "Ghost") continue;
             Destroy(child.gameObject);
+        }
 
         foreach (var item in inventory.Items)
             DrawItem(item);

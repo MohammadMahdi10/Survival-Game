@@ -101,6 +101,12 @@ public class GridInventory : MonoBehaviour
         return n;
     }
 
+    public PlacedItem GetItemAt(Vector2Int cell)
+    {
+        if (cell.x < 0 || cell.y < 0 || cell.x >= width || cell.y >= height) return null;
+        return Cells[cell.x, cell.y];
+    }
+
     [ContextMenu("Test Fill")]
     private void TestFill()
     {
