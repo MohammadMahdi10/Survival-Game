@@ -5497,6 +5497,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 2492910818676017082, guid: b92fd0e5486e33441934988a03e5fc7a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1242722302}
+    - targetCorrespondingSourceObject: {fileID: 2492910818676017082, guid: b92fd0e5486e33441934988a03e5fc7a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1242722307}
     - targetCorrespondingSourceObject: {fileID: 2007364321874963283, guid: b92fd0e5486e33441934988a03e5fc7a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1242722293}
@@ -5578,6 +5581,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   backpackGrid: {fileID: 1975128489}
   resourceManager: {fileID: 1936851654}
+--- !u!114 &1242722307
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 233175968}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 222771ad3ffbc124589af2ab16ac67b1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  backpackGrid: {fileID: 1975128489}
 --- !u!1001 &1290179858
 PrefabInstance:
   m_ObjectHideFlags: 0
