@@ -9,6 +9,7 @@ public class InventoryToggle : MonoBehaviour
 
     [SerializeField] private PlayerMovement playerMovement;
     [SerializeField] private MonoBehaviour mouseLook;
+    [SerializeField] private CraftingUI craftingUI;
 
     void Update()
     {
@@ -27,6 +28,7 @@ public class InventoryToggle : MonoBehaviour
         if (isOpen)
         {
             playerMovement.StopMovement();
+            craftingUI.UpdateMaterialCounters();
         }
 
         playerMovement.enabled = !isOpen;

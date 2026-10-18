@@ -1,8 +1,9 @@
-
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
-public class CraftingUI : MonoBehaviour
-{
+public class CraftingUI : MonoBehaviour {
     [SerializeField] private GameObject craftingScreen;
     [SerializeField] private GameObject materialsScreen;
 
@@ -12,28 +13,31 @@ public class CraftingUI : MonoBehaviour
 
     [SerializeField] private CraftingManager craftingManager;
 
+    [SerializeField] private ResourceManager resourceManager;
+    [SerializeField] private TextMeshProUGUI materialText1;
+    [SerializeField] private TextMeshProUGUI materialText2;
+
     private ItemType selectedRecipe;
 
-    public void ShowBasicSword()
-    {
+    public void ShowBasicSword() {
         selectedRecipe = ItemType.BasicSword;
+        UpdateMaterialCounters();
         ShowRecipe(basicSwordPage);
     }
 
-    public void ShowFireSword()
-    {
+    public void ShowFireSword() {
         selectedRecipe = ItemType.FireSword;
+        UpdateMaterialCounters();
         ShowRecipe(fireSwordPage);
     }
 
-    public void ShowBucket()
-    {
+    public void ShowBucket() {
         selectedRecipe = ItemType.WaterBucket;
+        UpdateMaterialCounters();
         ShowRecipe(bucketPage);
     }
 
-    private void ShowRecipe(GameObject selectedPage)
-    {
+    private void ShowRecipe(GameObject selectedPage) {
         Debug.Log("Recipe selected: " + selectedPage.name);
 
         craftingScreen.SetActive(false);
@@ -46,13 +50,11 @@ public class CraftingUI : MonoBehaviour
         materialsScreen.SetActive(true);
     }
 
-    public void ShowCraftingScreen()
-    {
+    public void ShowCraftingScreen() {
         materialsScreen.SetActive(false);
         craftingScreen.SetActive(true);
     }
-    public void CraftSelectedItem()
-    {
+    public void CraftSelectedItem() {
         bool success = craftingManager.CraftItem(selectedRecipe);
 
         if (success)
@@ -62,6 +64,30 @@ public class CraftingUI : MonoBehaviour
         else
         {
             Debug.Log("NO");
+        }
+
+        UpdateMaterialCounters();
+    }
+
+    public void UpdateMaterialCounters() {
+        Dictionary<ItemType, int> ingredients = craftingManager.GetRecipe(selectedRecipe);
+
+        if (ingredients == null) {
+            return;
+        }
+
+        TextMeshProUGUI[] materialTexts = {materialText1, materialText2};
+
+        int index = 0;
+
+        foreach (var ingredient in ingredients) {
+            ItemType material = ingredient.Key;
+            int requiredAmount = ingredient.Value;
+
+            int ownedAmount = resourceManager.GetResourceAmount(material);
+
+            materialTexts[index].text = "x" + requiredAmount + " " + material + " [" + ownedAmount + "]";
+            index++;
         }
     }
 
