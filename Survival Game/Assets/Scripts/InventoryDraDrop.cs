@@ -183,5 +183,7 @@ public class InventoryDragDrop : MonoBehaviour
             img.raycastTarget = false;
             ghostCells.Add(img);
         }
+
+        ItemLabels.Add(ghostRoot, heldType, heldShape, cellSize, spacing, Vector2Int.zero);
     }
 }

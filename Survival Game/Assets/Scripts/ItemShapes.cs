@@ -28,6 +28,20 @@ public static class ItemShapes
         [ItemType.SpecialItem] = new Color(0.7f, 0.3f, 0.9f),
     };
 
+    private static readonly Dictionary<ItemType, string> names = new()
+    {
+        [ItemType.DesertStone] = "Desert Stone",
+        [ItemType.PlainsStone] = "Plains Stone",
+        [ItemType.Wood] = "Wood",
+        [ItemType.BasicSword] = "Basic Sword",
+        [ItemType.FireSword] = "Fire Sword",
+        [ItemType.WaterBucket] = "Water Bucket",
+        [ItemType.SpecialItem] = "Special Item",
+    };
+
+    public static string GetName(ItemType item)
+        => names.TryGetValue(item, out var n) ? n : item.ToString();
+
     public static Vector2Int[] GetShape(ItemType item)
         => shapes.TryGetValue(item, out var s) ? s : new[] { V(0, 0) };
 

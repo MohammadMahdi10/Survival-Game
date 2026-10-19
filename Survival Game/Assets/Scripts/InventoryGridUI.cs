@@ -55,5 +55,7 @@ public class InventoryGridUI : MonoBehaviour
 
             go.GetComponent<Image>().color = color;
         }
+
+        ItemLabels.Add(transform, item.type, item.shape, cellSize, spacing, item.origin);
     }
 }
