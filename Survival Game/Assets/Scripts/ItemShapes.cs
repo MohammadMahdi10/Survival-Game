@@ -14,6 +14,7 @@ public static class ItemShapes
         [ItemType.BasicSword] = new[] { V(0, 0), V(0, 1), V(0, 2) },
         [ItemType.FireSword] = new[] { V(0, 0), V(0, 1), V(0, 2), V(1, 1) },
         [ItemType.WaterBucket] = new[] { V(0, 0), V(2, 0), V(0, 1), V(1, 1), V(2, 1) },
+        [ItemType.SpecialItem] = new[] { V(1, 0), V(0, 1), V(1, 1), V(2, 1), V(1, 2) },
     };
 
     private static readonly Dictionary<ItemType, Color> colors = new()
@@ -24,6 +25,7 @@ public static class ItemShapes
         [ItemType.BasicSword] = new Color(0.75f, 0.8f, 0.85f),
         [ItemType.FireSword] = new Color(0.9f, 0.4f, 0.2f),
         [ItemType.WaterBucket] = new Color(0.3f, 0.6f, 0.9f),
+        [ItemType.SpecialItem] = new Color(0.7f, 0.3f, 0.9f),
     };
 
     public static Vector2Int[] GetShape(ItemType item)

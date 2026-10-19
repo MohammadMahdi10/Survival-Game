@@ -15,6 +15,8 @@ public class WorldPickup : MonoBehaviour
 
     private void Update()
     {
+        if (type == ItemType.SpecialItem) return;
+
         if (Time.time < nextCheck) return;
         nextCheck = Time.time + 10f;
 
