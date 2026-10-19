@@ -2346,6 +2346,7 @@ GameObject:
   - component: {fileID: 381444904}
   - component: {fileID: 381444906}
   - component: {fileID: 381444905}
+  - component: {fileID: 381444907}
   m_Layer: 5
   m_Name: FireSwordPage
   m_TagString: Untagged
@@ -2472,6 +2473,24 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 381444903}
   m_CullTransparentMesh: 1
+--- !u!114 &381444907
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 381444903}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3cdd18309bd4342faa8f10185d4058de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  recipeItem: 4
+  craftingManager: {fileID: 341623477}
+  backpack: {fileID: 1707525388}
+  lines:
+  - {fileID: 1299458111}
+  - {fileID: 1624735557}
 --- !u!1 &382322276
 GameObject:
   m_ObjectHideFlags: 0
@@ -11469,6 +11488,7 @@ GameObject:
   - component: {fileID: 1619478678}
   - component: {fileID: 1619478680}
   - component: {fileID: 1619478679}
+  - component: {fileID: 1619478681}
   m_Layer: 5
   m_Name: BucketPage
   m_TagString: Untagged
@@ -11595,6 +11615,24 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1619478677}
   m_CullTransparentMesh: 1
+--- !u!114 &1619478681
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1619478677}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3cdd18309bd4342faa8f10185d4058de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  recipeItem: 5
+  craftingManager: {fileID: 341623477}
+  backpack: {fileID: 1707525388}
+  lines:
+  - {fileID: 421989291}
+  - {fileID: 1368856589}
 --- !u!1 &1624735555
 GameObject:
   m_ObjectHideFlags: 0
@@ -11996,6 +12034,7 @@ GameObject:
   - component: {fileID: 1647372102}
   - component: {fileID: 1647372104}
   - component: {fileID: 1647372103}
+  - component: {fileID: 1647372105}
   m_Layer: 5
   m_Name: BasicSwordPage
   m_TagString: Untagged
@@ -12122,6 +12161,24 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1647372101}
   m_CullTransparentMesh: 1
+--- !u!114 &1647372105
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1647372101}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3cdd18309bd4342faa8f10185d4058de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  recipeItem: 3
+  craftingManager: {fileID: 341623477}
+  backpack: {fileID: 1707525388}
+  lines:
+  - {fileID: 382322278}
+  - {fileID: 1433133552}
 --- !u!1 &1679323952
 GameObject:
   m_ObjectHideFlags: 0
