@@ -7715,6 +7715,9 @@ MonoBehaviour:
     layer: {fileID: 1766124439}
   cellSize: 100
   spacing: 10
+  questManager: {fileID: 1177441552}
+  groundInventory: {fileID: 2140457604}
+  playerInventory: {fileID: 1707525388}
 --- !u!114 &1206550081
 MonoBehaviour:
   m_ObjectHideFlags: 0

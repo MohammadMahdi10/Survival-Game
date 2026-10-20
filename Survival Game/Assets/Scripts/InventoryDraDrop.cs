@@ -29,6 +29,10 @@ public class InventoryDragDrop : MonoBehaviour
     private Vector2Int sourceOrigin;
     private Vector2Int[] sourceShape;
 
+    [SerializeField] private QuestManager questManager;
+    [SerializeField] private GridInventory groundInventory;
+    [SerializeField] private GridInventory playerInventory;
+
     private float Step => cellSize + spacing;
 
     private void Awake()
@@ -119,10 +123,20 @@ public class InventoryDragDrop : MonoBehaviour
         c.a = 0.8f;
         foreach (var img in ghostCells) img.color = c;
 
-        if (Mouse.current.leftButton.wasReleasedThisFrame)
-        {
-            if (valid) hover.inventory.Place(heldType, heldShape, origin);
-            else sourceGrid.inventory.Place(heldType, sourceShape, sourceOrigin);
+        if (Mouse.current.leftButton.wasReleasedThisFrame) {
+            if (valid) {
+                hover.inventory.Place(heldType, heldShape, origin);
+
+                if (heldType == ItemType.SpecialItem && sourceGrid.inventory == groundInventory && hover.inventory == playerInventory) {
+                    if (questManager != null) {
+                        questManager.StoneCollected();
+                    }
+                }
+            }
+            else {
+                sourceGrid.inventory.Place(heldType, sourceShape, sourceOrigin);
+            }
+
             EndHold();
         }
     }
