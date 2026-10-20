@@ -2,12 +2,16 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerStats : MonoBehaviour
 {
     [Header("Health")]
     public float maxHealth = 100f;
     public float currentHealth = 100f;
+
+    [Header("UI")]
+    public GameObject gameOverUI;
 
     [Header("Stamina")]
     public float maxStamina = 100f;
@@ -31,6 +35,7 @@ public class PlayerStats : MonoBehaviour
 
     private bool sprinting;
     private bool blocking;
+    private bool isDead = false;
 
     private void Awake()
     {
@@ -38,6 +43,9 @@ public class PlayerStats : MonoBehaviour
         currentStamina = Mathf.Clamp(currentStamina, 0f, maxStamina);
         currentHunger = Mathf.Clamp(currentHunger, 0f, maxHunger);
         currentThirst = Mathf.Clamp(currentThirst, 0f, maxThirst);
+
+        if (gameOverUI != null)
+            gameOverUI.SetActive(false);    
     }
 
     private void Start()
@@ -47,6 +55,8 @@ public class PlayerStats : MonoBehaviour
 
     private void Update()
     {
+        if (isDead) return;
+
         if (!sprinting && !blocking)
         {
             RestoreStamina(staminaRegenRate * Time.deltaTime);
@@ -80,6 +90,8 @@ public class PlayerStats : MonoBehaviour
 
     public void TakeDamage(float amount)
     {
+        if (isDead) return;
+
         currentHealth = Mathf.Clamp(
             currentHealth - (damageReduction * amount),
             0f, maxHealth
@@ -98,7 +110,35 @@ public class PlayerStats : MonoBehaviour
 
     private void Die()
     {
+        isDead = true;
         Debug.Log("Player has died!");
+
+        // 1. Display Game Over overlay
+        if (gameOverUI != null)
+            gameOverUI.SetActive(true);
+
+        // 2. Unlock and show cursor for button interaction
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        // 3. Disable all movement, look, and input scripts on player and child objects
+        MonoBehaviour[] scripts = GetComponentsInChildren<MonoBehaviour>();
+        foreach (var script in scripts)
+        {
+            if (script != this)
+            {
+                script.enabled = false;
+            }
+        }
+
+        // 4. Freeze engine time
+        Time.timeScale = 0f;
+    }
+
+    public void RestartGame()
+    {
+        Time.timeScale = 1f; // Resume the game
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     public bool UseStamina(float amount)
