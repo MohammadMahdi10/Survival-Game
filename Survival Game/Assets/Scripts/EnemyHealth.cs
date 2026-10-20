@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Jobs;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,7 +12,8 @@ public class EnemyHealth : MonoBehaviour
 
     [Header("UI Settings")]
     public Image healthFillImage;
-    // Start is called before the first frame update
+
+    public GameObject itemDropPrefab; // Assign the item prefab in the Inspector
     void Start()
     {
         currentHealth = maxHealth;
@@ -45,7 +47,11 @@ public class EnemyHealth : MonoBehaviour
 
     void Die()
     {
-        // Handling enemy death
+        if (itemDropPrefab != null)
+        {
+            Vector3 dropPosition = new Vector3(transform.position.x, transform.position.y + 0.5f, transform.position.z);
+            Instantiate(itemDropPrefab, dropPosition, Quaternion.identity);
+        }
         Destroy(gameObject);
     }
 }
