@@ -13,7 +13,9 @@ public class EnemyHealth : MonoBehaviour
     [Header("UI Settings")]
     public Image healthFillImage;
 
-    public GameObject itemDropPrefab; // Assign the item prefab in the Inspector
+    public ItemType lootType = ItemType.BasicSword;
+    public float dropRadius = 1.0f;
+
     void Start()
     {
         currentHealth = maxHealth;
@@ -47,11 +49,8 @@ public class EnemyHealth : MonoBehaviour
 
     void Die()
     {
-        if (itemDropPrefab != null)
-        {
-            Vector3 dropPosition = new Vector3(transform.position.x, transform.position.y + 0.5f, transform.position.z);
-            Instantiate(itemDropPrefab, dropPosition, Quaternion.identity);
-        }
+        WorldPickup.DropNear(lootType, transform.position, dropRadius);
+
         Destroy(gameObject);
     }
 }
