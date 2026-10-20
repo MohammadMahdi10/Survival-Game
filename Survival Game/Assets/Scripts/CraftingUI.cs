@@ -10,30 +10,23 @@ public class CraftingUI : MonoBehaviour {
     [SerializeField] private GameObject basicSwordPage;
     [SerializeField] private GameObject fireSwordPage;
     [SerializeField] private GameObject bucketPage;
-
     [SerializeField] private CraftingManager craftingManager;
 
-    [SerializeField] private ResourceManager resourceManager;
-    [SerializeField] private TextMeshProUGUI materialText1;
-    [SerializeField] private TextMeshProUGUI materialText2;
-
-    private ItemType selectedRecipe;
-
-    public void ShowBasicSword() {
-        selectedRecipe = ItemType.BasicSword;
-        UpdateMaterialCounters();
+    public void ShowBasicSword()
+    {
+        craftingManager.SelectRecipe(ItemType.BasicSword);
         ShowRecipe(basicSwordPage);
     }
 
-    public void ShowFireSword() {
-        selectedRecipe = ItemType.FireSword;
-        UpdateMaterialCounters();
+    public void ShowFireSword()
+    {
+        craftingManager.SelectRecipe(ItemType.FireSword);
         ShowRecipe(fireSwordPage);
     }
 
-    public void ShowBucket() {
-        selectedRecipe = ItemType.WaterBucket;
-        UpdateMaterialCounters();
+    public void ShowBucket()
+    {
+        craftingManager.SelectRecipe(ItemType.WaterBucket);
         ShowRecipe(bucketPage);
     }
 

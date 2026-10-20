@@ -9,6 +9,10 @@ public class EnemyHealth : MonoBehaviour
     public float maxHealth = 100f;
     private float currentHealth;
 
+    [Header("Drop")]
+    public bool dropsItem;
+    public ItemType dropItem;
+
     [Header("UI Settings")]
     public Image healthFillImage;
     // Start is called before the first frame update
@@ -42,7 +46,15 @@ public class EnemyHealth : MonoBehaviour
 
     void Die()
     {
-        // Handling enemy death
+        if (dropsItem)
+        {
+            // Switch off colliders first so the drop's ground check doesn't land on the boss
+            foreach (var c in GetComponentsInChildren<Collider>())
+                c.enabled = false;
+
+            WorldPickup.DropNear(dropItem, transform.position, 0.5f);
+        }
+
         Destroy(gameObject);
     }
 }
