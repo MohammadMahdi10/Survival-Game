@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Jobs;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -15,7 +16,10 @@ public class EnemyHealth : MonoBehaviour
 
     [Header("UI Settings")]
     public Image healthFillImage;
-    // Start is called before the first frame update
+
+    public ItemType lootType = ItemType.BasicSword;
+    public float dropRadius = 1.0f;
+
     void Start()
     {
         currentHealth = maxHealth;
