@@ -9,5 +9,6 @@ public enum ItemType
     DesertStone,
     BasicSword,
     FireSword,
-    WaterBucket
+    WaterBucket,
+    SpecialItem
 }
