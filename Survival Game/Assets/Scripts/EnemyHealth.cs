@@ -30,15 +30,12 @@ public class EnemyHealth : MonoBehaviour
         }
     }
 
-    private void OnMouseDown()
-    {
-        TakeDamage(10f);
-    }
-
     public void TakeDamage(float damage)
     {
         currentHealth -= damage;
-        currentHealth = Mathf.Clamp(currentHealth, 0f, maxHealth);
+
+        Debug.Log(gameObject.name + " took " + damage +
+                  " damage. Health remaining: " + currentHealth);
         UpdateHealthUI();
 
         if (currentHealth <= 0f)
