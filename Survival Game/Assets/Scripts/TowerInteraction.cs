@@ -9,6 +9,7 @@ public class TowerInteraction : MonoBehaviour
     [SerializeField] private GridInventory playerInventory;
     [SerializeField] private QuestManager questManager;
     [SerializeField] private Transform interactionPoint;
+    [SerializeField] private GameObject finalBoss;
 
     [Header("Settings")]
     [SerializeField] private float interactionDistance = 4f;
@@ -56,5 +57,9 @@ public class TowerInteraction : MonoBehaviour
         }
 
         questManager.StonePlaced();
+
+        if (finalBoss != null) {
+            finalBoss.SetActive(true);
+        }
     }
 }
