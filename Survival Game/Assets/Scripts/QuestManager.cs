@@ -72,4 +72,15 @@ public class QuestManager : MonoBehaviour {
         currentStage = QuestStage.ReturnToSpaceship;
         UpdateQuest();
     }
+
+    public void SpaceshipRepaired() {
+        if (currentStage != QuestStage.ReturnToSpaceship)
+        {
+            return;
+        }
+
+        currentStage = QuestStage.Completed;
+        UpdateQuest();
+    }
+
 }
