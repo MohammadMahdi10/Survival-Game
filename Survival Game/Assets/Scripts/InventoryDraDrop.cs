@@ -127,11 +127,17 @@ public class InventoryDragDrop : MonoBehaviour
             if (valid) {
                 hover.inventory.Place(heldType, heldShape, origin);
 
-                if (heldType == ItemType.SpecialItem && sourceGrid.inventory == groundInventory && hover.inventory == playerInventory) {
+                if (sourceGrid.inventory == groundInventory && hover.inventory == playerInventory) {
                     if (questManager != null) {
-                        questManager.StoneCollected();
+                        if (heldType == ItemType.SpecialItem) {
+                            questManager.StoneCollected();
+                        }
+                        else if (heldType == ItemType.RepairComponent) {
+                            questManager.ComponentCollected();
+                        }
                     }
                 }
+
             }
             else {
                 sourceGrid.inventory.Place(heldType, sourceShape, sourceOrigin);
