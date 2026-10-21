@@ -9,6 +9,7 @@ public class InventoryToggle : MonoBehaviour
 
     [SerializeField] private PlayerMovement playerMovement;
     [SerializeField] private MonoBehaviour mouseLook;
+    private bool gameWon = false;
 
     void Update()
     {
@@ -16,8 +17,13 @@ public class InventoryToggle : MonoBehaviour
             Toggle();
     }
 
-    public void Toggle()
-    {
+    public void Toggle(){
+
+        if (gameWon) {
+            return;
+        }
+
+
         bool isOpen = !inventoryPanel.activeSelf;
 
         inventoryPanel.SetActive(isOpen);
@@ -35,5 +41,9 @@ public class InventoryToggle : MonoBehaviour
         Cursor.lockState = isOpen ? CursorLockMode.None : CursorLockMode.Locked;
         Cursor.visible = isOpen;
 
+    }
+
+    public void DisableInventory() {
+        gameWon = true;
     }
 }

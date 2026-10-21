@@ -10,6 +10,8 @@ public class SpaceshipInteraction : MonoBehaviour {
     [SerializeField] private GridInventory playerInventory;
     [SerializeField] private QuestManager questManager;
     [SerializeField] private GameObject interactionPoint;
+    [SerializeField] private GameObject winScreen;
+    [SerializeField] private InventoryToggle inventoryToggle;
 
     [Header("Settings")]
     [SerializeField] private float interactionDistance = 4f;
@@ -65,7 +67,15 @@ public class SpaceshipInteraction : MonoBehaviour {
 
         transform.rotation = Quaternion.identity;
         interactionPoint.SetActive(false);
+
         repaired = true;
+
         questManager.SpaceshipRepaired();
+        inventoryToggle.DisableInventory();
+        winScreen.SetActive(true);
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+        Time.timeScale = 0f;
+
     }
 }
