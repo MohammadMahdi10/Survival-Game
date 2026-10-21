@@ -9017,6 +9017,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6791722469181753011, guid: 3fe166775ffbedd46bdb0c8cb5941b68, type: 3}
+      propertyPath: isFinalBoss
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6791722469181753011, guid: 3fe166775ffbedd46bdb0c8cb5941b68, type: 3}
       propertyPath: questManager
       value: 
       objectReference: {fileID: 1177441552}

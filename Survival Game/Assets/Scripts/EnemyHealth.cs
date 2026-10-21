@@ -19,6 +19,7 @@ public class EnemyHealth : MonoBehaviour
 
     [Header("Quest Settings")]
     public bool isMiniBoss;
+    public bool isFinalBoss;
 
     public ItemType lootType = ItemType.BasicSword;
     public float dropRadius = 1.0f;
@@ -59,6 +60,12 @@ public class EnemyHealth : MonoBehaviour
         {
             if (questManager != null) {
                 questManager.BossDefeated();
+            }
+        }
+
+        if (isFinalBoss) {
+            if (questManager != null) {
+                questManager.FinalBossDefeated();
             }
         }
 
