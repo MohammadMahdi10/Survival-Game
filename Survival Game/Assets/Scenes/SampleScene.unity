@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.09675569, g: 0.35171568, b: 0.7160293, a: 1}
+  m_IndirectSpecularColor: {r: 0.09674972, g: 0.35171828, b: 0.7160277, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -424,6 +424,15 @@ MonoBehaviour:
     m_Type: 0
     m_ExpectedControlType: 
     m_Id: d7702a56-f643-4b6a-99e0-a07c6ff67572
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings: []
+    m_Flags: 0
+  interactAction:
+    m_Name: Interact
+    m_Type: 0
+    m_ExpectedControlType: 
+    m_Id: 98441e97-bbac-4dcb-b2f6-efbe23ca285e
     m_Processors: 
     m_Interactions: 
     m_SingletonActionBindings: []
@@ -1406,6 +1415,7 @@ GameObject:
   - component: {fileID: 136375758}
   - component: {fileID: 136375757}
   - component: {fileID: 136375756}
+  - component: {fileID: 136375760}
   m_Layer: 0
   m_Name: Tower
   m_TagString: Untagged
@@ -1496,9 +1506,27 @@ Transform:
   m_LocalPosition: {x: 402.4, y: 100.1, z: 499.5}
   m_LocalScale: {x: 30, y: 200, z: 30}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 816533807}
   m_Father: {fileID: 866044933}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &136375760
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 136375755}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b45a1a4ac6d02984bafd2dff958d4cc4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  player: {fileID: 1304997871}
+  playerInventory: {fileID: 1707525388}
+  questManager: {fileID: 1177441552}
+  interactionPoint: {fileID: 816533807}
+  interactionDistance: 4
 --- !u!1 &146614456
 GameObject:
   m_ObjectHideFlags: 0
@@ -5640,6 +5668,37 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8678667463116070519, guid: 7fb15456b1b774d83ab0581ec502233e, type: 3}
   m_PrefabInstance: {fileID: 794443541}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &816533806
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 816533807}
+  m_Layer: 0
+  m_Name: TowerInteractionPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &816533807
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 816533806}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.152, y: -0.4892, z: -0.501}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 136375759}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &817604251
 PrefabInstance:
   m_ObjectHideFlags: 0

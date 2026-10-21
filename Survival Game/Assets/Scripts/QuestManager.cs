@@ -1,3 +1,4 @@
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -5,6 +6,7 @@ using UnityEngine;
 public class QuestManager : MonoBehaviour {
 
     [SerializeField] private QuestUI questUI;
+
     public enum QuestStage {
         DefeatBoss,
         CollectStone,
@@ -27,8 +29,7 @@ public class QuestManager : MonoBehaviour {
     }
 
     public void BossDefeated() {
-        if (currentStage != QuestStage.DefeatBoss)
-        {
+        if (currentStage != QuestStage.DefeatBoss) {
             return;
         }
 
@@ -37,8 +38,7 @@ public class QuestManager : MonoBehaviour {
     }
 
     public void StoneCollected() {
-        if (currentStage != QuestStage.CollectStone)
-        {
+        if (currentStage != QuestStage.CollectStone) {
             return;
         }
 
@@ -47,8 +47,7 @@ public class QuestManager : MonoBehaviour {
     }
 
     public void StonePlaced() {
-        if (currentStage != QuestStage.Tower)
-        {
+        if (currentStage != QuestStage.Tower) {
             return;
         }
 
@@ -57,8 +56,7 @@ public class QuestManager : MonoBehaviour {
     }
 
     public void FinalBossDefeated() {
-        if (currentStage != QuestStage.FinalBoss)
-        {
+        if (currentStage != QuestStage.FinalBoss) {
             return;
         }
 
@@ -67,14 +65,11 @@ public class QuestManager : MonoBehaviour {
     }
 
     public void ComponentCollected() {
-        if (currentStage != QuestStage.CollectComponent)
-        {
+        if (currentStage != QuestStage.CollectComponent) {
             return;
         }
 
         currentStage = QuestStage.ReturnToSpaceship;
         UpdateQuest();
     }
-
 }
-
