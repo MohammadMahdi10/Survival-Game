@@ -16,6 +16,8 @@ public class InventoryDragDrop : MonoBehaviour
     [SerializeField] private GridView[] grids;
     [SerializeField] private float cellSize = 100f;
     [SerializeField] private float spacing = 10f;
+    [SerializeField] private EquipmentManager equipment;
+    [SerializeField] private RectTransform equippedSlot;   // the HUD slot, for unequipping
 
     private RectTransform panel;
     private RectTransform ghostRoot;
@@ -84,6 +86,23 @@ public class InventoryDragDrop : MonoBehaviour
 
         if (!holding)
         {
+            bool equipPressed = Keyboard.current != null && Keyboard.current.fKey.wasPressedThisFrame;
+
+            if (equipPressed)
+            {
+                if (hover != null)
+                {
+                    PlacedItem item = hover.inventory.GetItemAt(cell);
+                    if (item != null && !equipment.Equip(hover.inventory, item))
+                        Debug.Log(ItemShapes.GetName(item.type) + " can't be equipped");
+                }
+                else if (equippedSlot != null &&
+                         RectTransformUtility.RectangleContainsScreenPoint(equippedSlot, screen))
+                {
+                    equipment.Unequip();
+                }
+            }
+
             if (hover != null && Mouse.current.leftButton.wasPressedThisFrame)
                 TryPickUp(hover, cell);
             return;
