@@ -2,6 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// Handles the player's melee attacks.
+/// Detects enemies in front of the player and calculates weapon damage,
+/// including elemental bonuses, hardcore mode and world difficulty.
 public class MeleeCombat : MonoBehaviour
 {
     public Camera playerCamera;
@@ -16,6 +19,8 @@ public class MeleeCombat : MonoBehaviour
     [Header("World Difficulty")]
     public WorldDifficultyManager worldDifficultyManager;
 
+    /// Checks every frame whether the player has clicked the left mouse button.
+    /// Starts an attack only when the cursor is locked during gameplay.
     void Update()
     {
         if (Input.GetMouseButtonDown(0) && Cursor.lockState == CursorLockMode.Locked)
@@ -24,6 +29,9 @@ public class MeleeCombat : MonoBehaviour
         }
     }
 
+    /// Casts a ray in front of the player to detect an enemy.
+    /// Calculates damage using the equipped weapon, elemental advantages,
+    /// hardcore mode and world difficulty, then damages the enemy.
     void DetectHit()
     {
         WeaponData stats = weaponStats.GetStats(equipment.Equipped);

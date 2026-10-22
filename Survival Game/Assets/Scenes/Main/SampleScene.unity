@@ -3504,7 +3504,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f9c4edbfeb09434d9ec47e76d64a88d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  biomeType: 1
+  biomeType: 0
   maxHealth: 30
   dropsItem: 1
   dropItem: 8
@@ -5063,7 +5063,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: 430}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 400, y: 90}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &492459324
@@ -8272,7 +8272,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f9c4edbfeb09434d9ec47e76d64a88d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  biomeType: 1
+  biomeType: 0
   maxHealth: 30
   dropsItem: 1
   dropItem: 8
@@ -8598,7 +8598,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 25, y: -140}
+  m_AnchoredPosition: {x: 0, y: -20}
   m_SizeDelta: {x: 370, y: 90}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &861794625
@@ -9821,11 +9821,11 @@ RectTransform:
   - {fileID: 1482421757}
   m_Father: {fileID: 311522548}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0.5, y: 1}
+  m_AnchorMax: {x: 0.5, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_Pivot: {x: 0.5, y: 1}
 --- !u!1001 &1061382840
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11423,7 +11423,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f9c4edbfeb09434d9ec47e76d64a88d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  biomeType: 1
+  biomeType: 0
   maxHealth: 30
   dropsItem: 1
   dropItem: 8
@@ -15586,7 +15586,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6791722469181753011, guid: 3fe166775ffbedd46bdb0c8cb5941b68, type: 3}
       propertyPath: biomeType
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6791722469181753011, guid: 3fe166775ffbedd46bdb0c8cb5941b68, type: 3}
       propertyPath: dropsItem
@@ -15652,7 +15652,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: 380}
+  m_AnchoredPosition: {x: 0, y: -50}
   m_SizeDelta: {x: 300, y: 90}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1482421758
@@ -15675,7 +15675,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 
+  m_text: x1.0
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -18070,7 +18070,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -972.458, y: -790.8125}
+  m_AnchoredPosition: {x: -870, y: -830}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!223 &1769010639

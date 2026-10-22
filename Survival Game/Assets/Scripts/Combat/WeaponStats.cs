@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// Defines the different types of damage a weapon can deal.
 public enum DamageType
 {
     Physical,
@@ -9,6 +10,7 @@ public enum DamageType
     Water
 }
 
+/// Stores a weapon's damage values and damage type.
 [System.Serializable]
 public class WeaponData
 {
@@ -22,9 +24,12 @@ public class WeaponData
         this.damageType = damageType;
     }
 
+    /// Calculates the weapon's total damage using its base damage and multiplier.
     public float TotalDamage => baseDamage * damageMultiplier;
 }
 
+/// Stores weapon statistics and provides methods to retrieve weapon data
+/// and calculate damage based on the current game mode.
 public class WeaponStats : MonoBehaviour
 {
     private Dictionary<ItemType, WeaponData> weaponStats;
@@ -33,6 +38,9 @@ public class WeaponStats : MonoBehaviour
     [SerializeField] private DayNightManager dayNightManager;
     [SerializeField] private float hardcoreDamageMultiplier = 0.75f;
 
+
+    /// Creates the weapon statistics dictionary when first accessed.
+    /// Stores each weapon's damage multiplier and elemental damage type.
     private Dictionary<ItemType, WeaponData> Stats
     {
         get
@@ -55,6 +63,9 @@ public class WeaponStats : MonoBehaviour
         }
     }
 
+
+    /// Retrieves the statistics for a specific weapon.
+    /// Returns null if the weapon has no stored statistics.
     public WeaponData GetStats(ItemType item)
     {
         return Stats.TryGetValue(item, out var data)
@@ -62,6 +73,10 @@ public class WeaponStats : MonoBehaviour
             : null;
     }
 
+
+    /// Calculates a weapon's damage and applies the hardcore damage
+    /// reduction when hardcore mode is active.
+    /// Returns zero if the weapon has no stored statistics.
     public float GetDamage(ItemType item) {
         WeaponData data = GetStats(item);
 
