@@ -16,6 +16,8 @@ public class InventoryDragDrop : MonoBehaviour
     [SerializeField] private GridView[] grids;
     [SerializeField] private float cellSize = 100f;
     [SerializeField] private float spacing = 10f;
+    [SerializeField] private EquipmentManager equipment;
+    [SerializeField] private RectTransform equippedSlot;   // the HUD slot, for unequipping
 
     private RectTransform panel;
     private RectTransform ghostRoot;
@@ -28,6 +30,10 @@ public class InventoryDragDrop : MonoBehaviour
     private GridView sourceGrid;
     private Vector2Int sourceOrigin;
     private Vector2Int[] sourceShape;
+
+    [SerializeField] private QuestManager questManager;
+    [SerializeField] private GridInventory groundInventory;
+    [SerializeField] private GridInventory playerInventory;
 
     private float Step => cellSize + spacing;
 
@@ -84,6 +90,23 @@ public class InventoryDragDrop : MonoBehaviour
 
         if (!holding)
         {
+            bool equipPressed = Keyboard.current != null && Keyboard.current.fKey.wasPressedThisFrame;
+
+            if (equipPressed)
+            {
+                if (hover != null)
+                {
+                    PlacedItem item = hover.inventory.GetItemAt(cell);
+                    if (item != null && !equipment.Equip(hover.inventory, item))
+                        Debug.Log(ItemShapes.GetName(item.type) + " can't be equipped");
+                }
+                else if (equippedSlot != null &&
+                         RectTransformUtility.RectangleContainsScreenPoint(equippedSlot, screen))
+                {
+                    equipment.Unequip();
+                }
+            }
+
             if (hover != null && Mouse.current.leftButton.wasPressedThisFrame)
                 TryPickUp(hover, cell);
             return;
@@ -119,10 +142,26 @@ public class InventoryDragDrop : MonoBehaviour
         c.a = 0.8f;
         foreach (var img in ghostCells) img.color = c;
 
-        if (Mouse.current.leftButton.wasReleasedThisFrame)
-        {
-            if (valid) hover.inventory.Place(heldType, heldShape, origin);
-            else sourceGrid.inventory.Place(heldType, sourceShape, sourceOrigin);
+        if (Mouse.current.leftButton.wasReleasedThisFrame) {
+            if (valid) {
+                hover.inventory.Place(heldType, heldShape, origin);
+
+                if (sourceGrid.inventory == groundInventory && hover.inventory == playerInventory) {
+                    if (questManager != null) {
+                        if (heldType == ItemType.SpecialItem) {
+                            questManager.StoneCollected();
+                        }
+                        else if (heldType == ItemType.RepairComponent) {
+                            questManager.ComponentCollected();
+                        }
+                    }
+                }
+
+            }
+            else {
+                sourceGrid.inventory.Place(heldType, sourceShape, sourceOrigin);
+            }
+
             EndHold();
         }
     }

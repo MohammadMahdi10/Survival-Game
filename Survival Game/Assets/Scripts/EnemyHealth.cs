@@ -29,8 +29,13 @@ public class EnemyHealth : MonoBehaviour
     [Header("UI Settings")]
     public Image healthFillImage;
 
+    [Header("Quest Settings")]
+    public bool isMiniBoss;
+    public bool isFinalBoss;
+
     public ItemType lootType = ItemType.BasicSword;
     public float dropRadius = 1.0f;
+    [SerializeField] private QuestManager questManager;
 
     void Start()
     {
@@ -68,17 +73,31 @@ public class EnemyHealth : MonoBehaviour
         }
     }
 
-    void Die()
-    {
-        if (dropsItem)
+    void Die() {
+
+        Debug.Log("Enemy has died!");
+        if (isMiniBoss)
         {
-            // Switch off colliders first so the drop's ground check doesn't land on the boss
-            foreach (var c in GetComponentsInChildren<Collider>())
+            if (questManager != null) {
+                questManager.BossDefeated();
+            }
+        }
+
+        if (isFinalBoss) {
+            if (questManager != null) {
+                questManager.FinalBossDefeated();
+            }
+        }
+
+        if (dropsItem) {
+            foreach (Collider c in GetComponentsInChildren<Collider>()) {
                 c.enabled = false;
+            }
 
             WorldPickup.DropNear(dropItem, transform.position, 0.5f);
         }
 
         Destroy(gameObject);
     }
+
 }
