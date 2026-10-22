@@ -10,6 +10,9 @@ public class MiniBossAI : MonoBehaviour
     [Header("Target Settings")]
     public Transform playerTarget;
 
+    [Header("Detection Settings")]
+    public float detectionRange = 15f;
+
     [Header("Combat Settings")]
     public float attackRange = 3.2f;
     public float attackCooldown = 1f;
@@ -44,7 +47,16 @@ public class MiniBossAI : MonoBehaviour
 
         float distanceToPlayer = Vector3.Distance(transform.position, playerTarget.position);
 
-        if (distanceToPlayer > attackRange)
+        if (distanceToPlayer > detectionRange)
+        {
+            if (agent != null && agent.isActiveAndEnabled && !agent.isStopped)
+            {
+                agent.isStopped = true;
+            }
+            return;
+        }
+
+        if(distanceToPlayer > attackRange)
         {
             if (agent != null && agent.isActiveAndEnabled)
             {
@@ -52,6 +64,7 @@ public class MiniBossAI : MonoBehaviour
                 agent.SetDestination(playerTarget.position);
             }
         }
+        // ATTACK RANGE: Player is close enough to swing
         else
         {
             if (agent != null && agent.isActiveAndEnabled)
