@@ -45,6 +45,11 @@ public static class ItemShapes
         [ItemType.Mutton] = "Raw Mutton",
     };
 
+    public static bool IsEquippable(ItemType item)
+    => item == ItemType.BasicSword ||
+       item == ItemType.FireSword ||
+       item == ItemType.WaterBucket;
+
     public static string GetName(ItemType item)
         => names.TryGetValue(item, out var n) ? n : item.ToString();
 
