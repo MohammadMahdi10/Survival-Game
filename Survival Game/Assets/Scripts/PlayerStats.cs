@@ -54,6 +54,17 @@ public class PlayerStats : MonoBehaviour
 
     private bool hardcoreStatsApplied = false;
 
+    [Header("World Difficulty")]
+    public WorldDifficultyManager worldDifficultyManager;
+
+    public float worldHealthPenalty = 0.4f;
+    public float worldStaminaPenalty = 0.4f;
+
+    private float baseMaxHealth;
+    private float baseMaxStamina;
+    private float baseHungerDrain;
+    private float baseThirstDrain;
+
     private void Awake()
     {
         currentHealth = Mathf.Clamp(currentHealth, 0f, maxHealth);
@@ -62,7 +73,12 @@ public class PlayerStats : MonoBehaviour
         currentThirst = Mathf.Clamp(currentThirst, 0f, maxThirst);
 
         if (gameOverUI != null)
-            gameOverUI.SetActive(false);    
+            gameOverUI.SetActive(false);
+
+        baseMaxHealth = maxHealth;
+        baseMaxStamina = maxStamina;
+        baseHungerDrain = hungerDrain;
+        baseThirstDrain = thirstDrain;
     }
 
     private void Start()
@@ -76,6 +92,7 @@ public class PlayerStats : MonoBehaviour
             ApplyHardcoreStats();
         }
 
+        UpdateDifficultyStats();
         UpdateStatBars();
         if (isDead) return;
 
@@ -223,20 +240,34 @@ public class PlayerStats : MonoBehaviour
             staminaFill.fillAmount = currentStamina / maxStamina;
     }
 
-    public void ApplyHardcoreStats() {
+    private void ApplyHardcoreStats() {
         if (hardcoreStatsApplied) {
             return;
         }
 
         hardcoreStatsApplied = true;
+    }
 
-        maxHealth *= hardcoreHealthMultiplier;
+    public void UpdateDifficultyStats() {
+        float difficulty = worldDifficultyManager != null ? worldDifficultyManager.worldDifficulty : 1f;
+
+        float increase = Mathf.Max(0f, difficulty - 1f);
+
+        float hardcoreHealth = hardcoreStatsApplied ? hardcoreHealthMultiplier : 1f;
+        float hardcoreStamina = hardcoreStatsApplied ? hardcoreStaminaMultiplier : 1f;
+        float hardcoreHunger = hardcoreStatsApplied ? hardcoreHungerDrainMultiplier : 1f;
+        float hardcoreThirst = hardcoreStatsApplied ? hardcoreThirstDrainMultiplier : 1f;
+
+        float newMaxHealth = baseMaxHealth * hardcoreHealth * Mathf.Max(0.1f, 1f - increase * worldHealthPenalty);
+        float newMaxStamina = baseMaxStamina * hardcoreStamina * Mathf.Max(0.1f, 1f - increase * worldStaminaPenalty);
+
+        maxHealth = newMaxHealth;
+        maxStamina = newMaxStamina;
+
         currentHealth = Mathf.Min(currentHealth, maxHealth);
-
-        maxStamina *= hardcoreStaminaMultiplier;
         currentStamina = Mathf.Min(currentStamina, maxStamina);
 
-        hungerDrain *= hardcoreHungerDrainMultiplier;
-        thirstDrain *= hardcoreThirstDrainMultiplier;
+        hungerDrain = baseHungerDrain * hardcoreHunger * difficulty;
+        thirstDrain = baseThirstDrain * hardcoreThirst * difficulty;
     }
 }

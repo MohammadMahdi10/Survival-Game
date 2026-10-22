@@ -23,6 +23,9 @@ public class MiniBossAI : MonoBehaviour
     public Transform swordTransform;
     private bool isAttacking = false;
 
+    [Header("World Difficulty")]
+    public WorldDifficultyManager worldDifficultyManager;
+
     private NavMeshAgent agent;
 
     void Start()
@@ -115,9 +118,12 @@ public class MiniBossAI : MonoBehaviour
             if (playerTarget != null && Vector3.Distance(transform.position, playerTarget.position) <= attackRange + 0.5f)
             {
                 PlayerStats stats = playerTarget.GetComponent<PlayerStats>();
-                if (stats != null)
-                {
-                    stats.TakeDamage(attackDamage);
+                if (stats != null) {
+                    float difficulty = worldDifficultyManager != null ? worldDifficultyManager.worldDifficulty : 1f;
+
+                    float finalDamage = attackDamage * difficulty;
+
+                    stats.TakeDamage(finalDamage);
                 }
             }
 

@@ -13,6 +13,9 @@ public class MeleeCombat : MonoBehaviour
     public DayNightManager dayNightManager;
     public float hardcoreDamageMultiplier = 0.75f;
 
+    [Header("World Difficulty")]
+    public WorldDifficultyManager worldDifficultyManager;
+
     void Update()
     {
         if (Input.GetMouseButtonDown(0) && Cursor.lockState == CursorLockMode.Locked)
@@ -51,6 +54,11 @@ public class MeleeCombat : MonoBehaviour
 
                 if (dayNightManager != null && dayNightManager.hardcoreMode) {
                     damage *= hardcoreDamageMultiplier;
+                }
+
+                if (worldDifficultyManager != null) {
+                    float difficulty = Mathf.Max(1f, worldDifficultyManager.worldDifficulty);
+                    damage /= difficulty;
                 }
 
                 enemy.TakeDamage(damage);

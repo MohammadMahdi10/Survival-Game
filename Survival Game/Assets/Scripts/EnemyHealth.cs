@@ -33,6 +33,9 @@ public class EnemyHealth : MonoBehaviour
     public bool isMiniBoss;
     public bool isFinalBoss;
 
+    [Header("World Difficulty")]
+    public WorldDifficultyManager worldDifficultyManager;
+
     public ItemType lootType = ItemType.BasicSword;
     public float dropRadius = 1.0f;
     [SerializeField] private QuestManager questManager;
@@ -76,10 +79,13 @@ public class EnemyHealth : MonoBehaviour
     void Die() {
 
         Debug.Log("Enemy has died!");
-        if (isMiniBoss)
-        {
+        if (isMiniBoss) {
             if (questManager != null) {
                 questManager.BossDefeated();
+            }
+
+            if (worldDifficultyManager != null) {
+                worldDifficultyManager.MiniBossDefeated();
             }
         }
 
