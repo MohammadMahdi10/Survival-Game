@@ -10,8 +10,10 @@ public class CraftingManager : MonoBehaviour
 
     private Dictionary<ItemType, Dictionary<ItemType, int>> recipes;
 
-    /// Creates and stores the crafting recipes when they are first needed.
-    /// Each recipe contains the materials and quantities required.
+
+    /// Creates the crafting recipes only when they are first needed.
+    /// Keeping recipes in one dictionary allows new craftable items
+    /// to be added without changing the crafting methods.
     private Dictionary<ItemType, Dictionary<ItemType, int>> Recipes
     {
         get
@@ -48,8 +50,10 @@ public class CraftingManager : MonoBehaviour
         return Recipes.TryGetValue(item, out var recipe) ? recipe : null;
     }
 
-    /// Checks whether the player's backpack contains
-    /// enough materials to craft the requested item.
+
+    /// Checks whether the backpack contains every material required
+    /// by the recipe. This prevents crafting when resources are missing,
+    /// ensuring materials cannot be used beyond what the player owns.
     public bool CanCraft(ItemType item)
     {
         var ingredients = GetRecipe(item);
@@ -62,9 +66,11 @@ public class CraftingManager : MonoBehaviour
         return true;
     }
 
-    /// Crafts an item if the player has enough materials.
-    /// Removes the required resources and adds the item to the backpack.
-    /// If the backpack is full, drops the crafted item near the player.
+
+    /// Crafts an item only when all required materials are available.
+    /// Consumes the ingredients and attempts to store the finished item.
+    /// If the backpack is full, the item is dropped near the player
+    /// so the crafted item is not lost.
     public bool Craft(ItemType item)
     {
         if (!CanCraft(item))

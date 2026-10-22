@@ -1,11 +1,17 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// Stores item shapes, colours and display names in one central location.
+/// This allows inventory, crafting and equipment systems to reuse the
+/// same item information without duplicating it across multiple scripts.
 public static class ItemShapes
 {
-    // Cells are (column, row) offsets from the item's top-left. Row 0 is the top.
+    /// Creates a grid position using column and row coordinates.
+    /// Row zero represents the top of an item.
     private static Vector2Int V(int x, int y) => new Vector2Int(x, y);
 
+    // Defines which grid cells each item occupies.
+    // Coordinates are offsets from the item's top-left corner.
     private static readonly Dictionary<ItemType, Vector2Int[]> shapes = new()
     {
         [ItemType.DesertStone] = new[] { V(0, 0) },
@@ -19,6 +25,7 @@ public static class ItemShapes
         [ItemType.Mutton] = new[] { V(0, 0), V(0, 1), V(1, 1) },
     };
 
+    // Stores the colour used to display each item in the inventory.
     private static readonly Dictionary<ItemType, Color> colors = new()
     {
         [ItemType.DesertStone] = new Color(0.85f, 0.7f, 0.4f),
@@ -32,6 +39,7 @@ public static class ItemShapes
         [ItemType.Mutton] = new Color(0.7f, 0.35f, 0.25f),
     };
 
+    // Stores the names shown to the player for each item.
     private static readonly Dictionary<ItemType, string> names = new()
     {
         [ItemType.DesertStone] = "Desert Stone",
@@ -45,17 +53,29 @@ public static class ItemShapes
         [ItemType.Mutton] = "Raw Mutton",
     };
 
+    /// Checks whether an item can be equipped by the player.
     public static bool IsEquippable(ItemType item)
     => item == ItemType.BasicSword ||
        item == ItemType.FireSword ||
        item == ItemType.WaterBucket;
 
+    /// Returns an item's display name.
+    /// Uses the item type's name if no custom display name exists.
     public static string GetName(ItemType item)
         => names.TryGetValue(item, out var n) ? n : item.ToString();
 
+    /// Returns the grid cells occupied by an item's shape.
+    /// Uses a single cell shape if the item has no defined shape.
     public static Vector2Int[] GetShape(ItemType item)
         => shapes.TryGetValue(item, out var s) ? s : new[] { V(0, 0) };
 
+
+
+    /// Rotates an item's shape by 90 degrees clockwise.
+    /// Shifts the rotated cells back to the top-left of the grid
+    /// so the item remains correctly aligned after rotation.
+    /// Also updates the grab position so the item stays attached
+    /// to the correct mouse position while being dragged.
     public static Vector2Int[] Rotate(Vector2Int[] shape, ref Vector2Int point)
     {
         var rotated = new Vector2Int[shape.Length];
@@ -68,6 +88,9 @@ public static class ItemShapes
             minY = Mathf.Min(minY, rotated[i].y);
         }
 
+
+        // Rotation can produce negative cell coordinates.
+        // Shift all cells so the shape starts at zero again.
         var shift = new Vector2Int(minX, minY);
         for (int i = 0; i < rotated.Length; i++) rotated[i] -= shift;
 
@@ -75,6 +98,8 @@ public static class ItemShapes
         return rotated;
     }
 
+    /// Returns the colour used to display an item.
+    /// Uses white if the item has no defined colour.
     public static Color GetColor(ItemType item)
         => colors.TryGetValue(item, out var c) ? c : Color.white;
 }

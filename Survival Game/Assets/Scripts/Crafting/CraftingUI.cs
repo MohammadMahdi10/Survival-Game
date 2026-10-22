@@ -1,7 +1,10 @@
 using UnityEngine;
 
+
 /// Controls the crafting menu interface.
-/// Allows the player to select recipes and view their required materials.
+/// Keeps recipe selection and screen navigation separate from
+/// the actual crafting logic handled by CraftingManager.
+
 public class CraftingUI : MonoBehaviour
 {
     [SerializeField] private GameObject craftingScreen;
@@ -12,29 +15,30 @@ public class CraftingUI : MonoBehaviour
     [SerializeField] private GameObject bucketPage;
     [SerializeField] private CraftingManager craftingManager;
 
-    /// Selects the Basic Sword recipe and displays its crafting page.
+    /// Functions below select craftable item recipe and displays its crafting page.
     public void ShowBasicSword()
     {
         craftingManager.SelectRecipe(ItemType.BasicSword);
         ShowRecipe(basicSwordPage);
     }
 
-    /// Selects the Fire Sword recipe and displays its crafting page.
     public void ShowFireSword()
     {
         craftingManager.SelectRecipe(ItemType.FireSword);
         ShowRecipe(fireSwordPage);
     }
 
-    /// Selects the Water Bucket recipe and displays its crafting page.
     public void ShowBucket()
     {
         craftingManager.SelectRecipe(ItemType.WaterBucket);
         ShowRecipe(bucketPage);
     }
 
-    /// Hides the recipe selection screen and other recipe pages.
-    /// Displays the selected recipe page and its required materials.
+
+    /// Displays the selected recipe page and hides the others.
+    /// Using one shared method avoids repeating the same screen
+    /// switching logic for every craftable item.
+
     private void ShowRecipe(GameObject selectedPage)
     {
         Debug.Log("Recipe selected: " + selectedPage.name);

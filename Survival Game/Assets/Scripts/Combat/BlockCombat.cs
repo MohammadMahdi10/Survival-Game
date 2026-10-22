@@ -7,8 +7,11 @@ public class BlockCombat : MonoBehaviour
     public bool isBlocking { get; private set; }
     public PlayerStats stats;
 
-    /// Checks every frame whether the player is holding the right mouse button.
-    /// Updates the blocking state if the player has enough stamina.
+
+    /// Checks whether the player is holding the right mouse button.
+    /// Only allows blocking when stamina is available, preventing
+    /// the player from blocking indefinitely without stamina.
+
     private void Update()
     {
         isBlocking = Input.GetMouseButton(1);
@@ -18,7 +21,11 @@ public class BlockCombat : MonoBehaviour
         );
     }
 
-    /// Stops the player from blocking when this script is disabled.
+
+    /// Clears the blocking state when this script is disabled.
+    /// This prevents the player from remaining in a blocking state
+    /// after the blocking component stops running.
+
     private void OnDisable()
     {
         if (stats != null)

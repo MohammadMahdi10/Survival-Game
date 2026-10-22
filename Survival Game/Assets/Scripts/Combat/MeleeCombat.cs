@@ -19,8 +19,11 @@ public class MeleeCombat : MonoBehaviour
     [Header("World Difficulty")]
     public WorldDifficultyManager worldDifficultyManager;
 
-    /// Checks every frame whether the player has clicked the left mouse button.
-    /// Starts an attack only when the cursor is locked during gameplay.
+
+    /// Checks for a left mouse click to trigger a melee attack.
+    /// Only attacks when the cursor is locked to prevent clicks
+    /// on inventory or menu buttons from triggering attacks.
+
     void Update()
     {
         if (Input.GetMouseButtonDown(0) && Cursor.lockState == CursorLockMode.Locked)
@@ -29,12 +32,19 @@ public class MeleeCombat : MonoBehaviour
         }
     }
 
-    /// Casts a ray in front of the player to detect an enemy.
-    /// Calculates damage using the equipped weapon, elemental advantages,
-    /// hardcore mode and world difficulty, then damages the enemy.
+
+    /// Uses a raycast from the player's camera to detect enemies in range.
+    /// Applies weapon damage, elemental bonuses and difficulty modifiers
+    /// before passing the final damage value to the enemy.
+
     void DetectHit()
     {
         WeaponData stats = weaponStats.GetStats(equipment.Equipped);
+
+
+        // Use basic physical damage when no weapon is equipped,
+        // so the player can still attack without a weapon.
+
         if (stats == null){
             stats = new WeaponData(1,DamageType.Physical);
         }
@@ -55,6 +65,11 @@ public class MeleeCombat : MonoBehaviour
 
             if (enemy != null)
             {
+
+
+                // Fire attacks deal double damage to ice enemies,
+                // rewarding the player for choosing the right weapon.
+
                 if (enemy.biomeType == BiomeType.Ice && stats.damageType == DamageType.Fire){
                     typeBonus = 2f;
                 }

@@ -4,6 +4,9 @@ using System.Timers;
 using UnityEngine;
 using UnityEngine.AI;
 
+/// Controls the mini-boss's movement, targeting and melee attacks.
+/// Uses NavMesh navigation to chase the player when detected,
+/// and scales attack damage with the current world difficulty.
 public class MiniBossAI : MonoBehaviour
 {
 
@@ -28,6 +31,8 @@ public class MiniBossAI : MonoBehaviour
 
     private NavMeshAgent agent;
 
+    /// Initialises the NavMesh agent and finds the player if no
+    /// target has been assigned, allowing the boss to track the player.
     void Start()
     {
         agent = GetComponent<NavMeshAgent>();
@@ -44,6 +49,9 @@ public class MiniBossAI : MonoBehaviour
         }
     }
 
+    /// Checks the distance to the player each frame.
+    /// Stops chasing outside detection range, approaches the player
+    /// within detection range, and attacks when close enough.
     void Update()
     {
         if (playerTarget == null) { return; }
@@ -67,7 +75,6 @@ public class MiniBossAI : MonoBehaviour
                 agent.SetDestination(playerTarget.position);
             }
         }
-        // ATTACK RANGE: Player is close enough to swing
         else
         {
             if (agent != null && agent.isActiveAndEnabled)
@@ -85,18 +92,22 @@ public class MiniBossAI : MonoBehaviour
         }
     }
 
+    /// Smoothly rotates the mini-boss to face the player.
+    /// Ignores vertical direction so the boss stays upright
+    /// rather than tilting towards the player's height.
     void LookAtTarget() { 
         Vector3 direction = (playerTarget.position - transform.position).normalized;
         direction.y = 0;
-        // Keep the y-axis rotation unchanged
 
-        // Slerp: Smoothly rotate the MiniBoss towards the player
         if (direction != Vector3.zero) {
             Quaternion lookRotation = Quaternion.LookRotation(direction);
             transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * 5f);
         }
     }
 
+    /// Animates the sword swing and checks whether the player is in range.
+    /// Uses a coroutine to spread the attack animation over multiple frames
+    /// instead of instantly changing the sword's rotation.
     IEnumerator SwingSwordRoutine() {
         isAttacking = true;
 
@@ -115,19 +126,27 @@ public class MiniBossAI : MonoBehaviour
                 yield return null;
             }
 
+            // Check range when the swing reaches its target so the player
+            // can avoid damage by moving away before the hit connects.
+
             if (playerTarget != null && Vector3.Distance(transform.position, playerTarget.position) <= attackRange + 0.5f)
             {
                 PlayerStats stats = playerTarget.GetComponent<PlayerStats>();
                 if (stats != null) {
                     float difficulty = worldDifficultyManager != null ? worldDifficultyManager.worldDifficulty : 1f;
 
+
+                    // Scale boss damage with world difficulty to increase
+                    // the challenge as the player progresses.
                     float finalDamage = attackDamage * difficulty;
 
                     stats.TakeDamage(finalDamage);
                 }
             }
 
-            yield return new WaitForSeconds(0.2f); // Wait for a short moment before returning to original position
+
+            // Brief pause before returning the sword to its starting position.
+            yield return new WaitForSeconds(0.2f);
 
             elapsed = 0f;
             while (elapsed < duration)
@@ -137,7 +156,9 @@ public class MiniBossAI : MonoBehaviour
                 yield return null;
             }
 
-            swordTransform.localRotation = originalRotation; // Ensure the sword returns to its original rotation
+
+            // Restore the exact starting rotation to avoid animation drift.
+            swordTransform.localRotation = originalRotation;
         }
         isAttacking = false;
     }

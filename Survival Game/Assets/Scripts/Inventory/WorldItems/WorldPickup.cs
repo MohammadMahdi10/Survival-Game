@@ -2,6 +2,9 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
+/// Manages items dropped into the game world.
+/// Creates item visuals and labels, places items on the ground,
+/// and removes distant pickups while protecting important quest items.
 public class WorldPickup : MonoBehaviour
 {
     public static readonly List<WorldPickup> All = new();
@@ -12,17 +15,24 @@ public class WorldPickup : MonoBehaviour
     private Transform label;
     private float nextCheck;
 
+    /// Adds this pickup to the list of active world pickups
+    /// when the GameObject becomes enabled.
     private void OnEnable() => All.Add(this);
+
+    /// Removes this pickup from the list of active world pickups
+    /// when the GameObject becomes disabled.
     private void OnDisable() => All.Remove(this);
 
+
+    /// Removes ordinary pickups when they are too far from the camera
+    /// to prevent unnecessary objects from building up in the world.
+    /// Checks once per second to avoid unnecessary calculations.
     private void Update()
     {
-        // The special item never despawns, or the player could lose it for good
         if (type == ItemType.SpecialItem || type == ItemType.RepairComponent) {
             return;
         }
 
-        // Only check once a second, it doesn't need to run every frame
         if (Time.time < nextCheck) return;
         nextCheck = Time.time + 1f;
 
@@ -34,15 +44,20 @@ public class WorldPickup : MonoBehaviour
             Destroy(gameObject);
     }
 
+
+    /// Keeps the item's label facing the camera so it remains readable
+    /// as the player moves around the world.
     private void LateUpdate()
     {
-        // Keep the label facing the player
         if (label == null) return;
         Camera cam = Camera.main;
         if (cam != null) label.rotation = cam.transform.rotation;
     }
 
-    // Placeholder visual: a small coloured cube with a name above it
+
+    /// Creates a world pickup using a coloured cube and item name.
+    /// Uses shared item definitions so all pickups display consistently
+    /// without requiring separate prefabs for every item type.
     public static WorldPickup Spawn(ItemType type, Vector3 position)
     {
         var root = new GameObject(type + " (pickup)");
@@ -73,7 +88,10 @@ public class WorldPickup : MonoBehaviour
         return pickup;
     }
 
-    // Drops an item on the ground at a random spot around a point
+
+    /// Spawns an item at a random position near the specified point.
+    /// Uses a downward raycast to place the item on the ground,
+    /// helping prevent it from appearing underground or floating.
     public static WorldPickup DropNear(ItemType type, Vector3 center, float radius)
     {
         Vector2 offset = Random.insideUnitCircle * radius;

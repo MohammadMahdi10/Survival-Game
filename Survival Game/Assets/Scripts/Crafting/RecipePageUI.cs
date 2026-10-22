@@ -19,15 +19,20 @@ public class RecipePageUI : MonoBehaviour
         Refresh();
     }
 
-    /// Stops listening for inventory changes when the page closes.
+
+    /// Stops listening for inventory changes when the recipe page closes.
+    /// This prevents unnecessary updates and avoids leaving event subscriptions active.
+
     private void OnDisable()
     {
         backpack.Changed -= Refresh;
     }
 
-    /// Updates the displayed ingredients and their quantities.
-    /// Shows how many of each material the player currently owns.
-    /// Highlights ingredients in green when enough are available.
+
+    /// Updates the required materials and current quantities for the recipe.
+    /// Highlights ingredients in green when enough are available,
+    /// helping the player quickly identify which materials are still needed.
+
     private void Refresh()
     {
         var recipe = craftingManager.GetRecipe(recipeItem);
@@ -42,7 +47,6 @@ public class RecipePageUI : MonoBehaviour
             lines[i].text = "x" + ingredient.Value + " " +
                             ItemShapes.GetName(ingredient.Key) + " [" + have + "]";
 
-            // Green once you have enough
             lines[i].color = have >= ingredient.Value ? new Color(0.5f, 1f, 0.5f) : Color.white;
             i++;
         }

@@ -1,6 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+/// Controls opening and closing the player's inventory interface.
+/// Also pauses player movement, manages the mouse cursor,
+/// and prevents the inventory from opening after winning the game.
 public class InventoryToggle : MonoBehaviour
 {
     [SerializeField] private GameObject inventoryPanel;
@@ -12,12 +15,18 @@ public class InventoryToggle : MonoBehaviour
     [SerializeField] private MonoBehaviour mouseLook;
     private bool gameWon = false;
 
+    /// Checks every frame whether the player presses E
+    /// to open or close the inventory.
     void Update()
     {
         if (Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
             Toggle();
     }
 
+    /// Opens or closes the inventory, crafting menu and ground panel.
+    /// Disables movement and mouse look while the inventory is open
+    /// to prevent the player from moving or attacking while using the UI.
+    /// Restores player controls when the inventory closes.
     public void Toggle(){
 
         if (gameWon) {
@@ -45,6 +54,8 @@ public class InventoryToggle : MonoBehaviour
 
     }
 
+    /// Locks inventory toggling after the player wins.
+    /// This prevents inventory input from interfering with the victory screen.
     public void DisableInventory() {
         gameWon = true;
     }
