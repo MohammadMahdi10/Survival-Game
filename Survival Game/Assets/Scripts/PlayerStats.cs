@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class PlayerStats : MonoBehaviour
 {
@@ -30,12 +31,16 @@ public class PlayerStats : MonoBehaviour
     public float thirstDrain = 1f;
 
     [Header("Combat")]
-    public float damageMultiplier = 1f;
     public float damageReduction = 1f;
 
     private bool sprinting;
     private bool blocking;
     private bool isDead = false;
+
+    [Header("Stat Bar Fills")]
+    public Image healthFill;
+    public Image hungerFill;
+    public Image staminaFill;
 
     private void Awake()
     {
@@ -55,6 +60,7 @@ public class PlayerStats : MonoBehaviour
 
     private void Update()
     {
+        UpdateStatBars();
         if (isDead) return;
 
         if (!sprinting && !blocking)
@@ -85,7 +91,7 @@ public class PlayerStats : MonoBehaviour
     public void SetBlocking(bool active)
     {
         blocking = active && currentStamina > 0f;
-        damageReduction = blocking ? 0.8f : 1f;
+        damageReduction = blocking ? 0.1f : 1f;
     }
 
     public void TakeDamage(float amount)
@@ -182,5 +188,16 @@ public class PlayerStats : MonoBehaviour
             ChangeThirst(-thirstDrain);
             yield return new WaitForSeconds(1f);
         }
+    }
+    private void UpdateStatBars()
+    {
+        if (healthFill != null)
+            healthFill.fillAmount = currentHealth / maxHealth;
+
+        if (hungerFill != null)
+            hungerFill.fillAmount = currentHunger / maxHunger;
+
+        if (staminaFill != null)
+            staminaFill.fillAmount = currentStamina / maxStamina;
     }
 }
