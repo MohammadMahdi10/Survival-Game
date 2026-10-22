@@ -6803,7 +6803,7 @@ GameObject:
   m_Component:
   - component: {fileID: 653871815}
   m_Layer: 0
-  m_Name: '[Player, hostile enemies and passive creatures ]'
+  m_Name: '[Player, hostile enemies and passive creatures]'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -12762,7 +12762,7 @@ PrefabInstance:
       objectReference: {fileID: 1304997871}
     - target: {fileID: 6791722469181753011, guid: 3fe166775ffbedd46bdb0c8cb5941b68, type: 3}
       propertyPath: dropItem
-      value: 0
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 6791722469181753011, guid: 3fe166775ffbedd46bdb0c8cb5941b68, type: 3}
       propertyPath: biomeType
@@ -12788,6 +12788,10 @@ PrefabInstance:
       propertyPath: questManager
       value: 
       objectReference: {fileID: 1177441552}
+    - target: {fileID: 6791722469181753011, guid: 3fe166775ffbedd46bdb0c8cb5941b68, type: 3}
+      propertyPath: worldDifficultyManager
+      value: 
+      objectReference: {fileID: 440980378}
     - target: {fileID: 8480667875670697663, guid: 3fe166775ffbedd46bdb0c8cb5941b68, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -15578,7 +15582,7 @@ PrefabInstance:
       objectReference: {fileID: 440980378}
     - target: {fileID: 6791722469181753011, guid: 3fe166775ffbedd46bdb0c8cb5941b68, type: 3}
       propertyPath: dropItem
-      value: 0
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 6791722469181753011, guid: 3fe166775ffbedd46bdb0c8cb5941b68, type: 3}
       propertyPath: biomeType
