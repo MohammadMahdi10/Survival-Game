@@ -22,8 +22,10 @@ We built a working prototype focused on survival basics: gathering resources, cr
 | **Sprint** | Left Shift | Moves you faster, but uses up stamina more quickly |
 | **Gather Resources** | Left click (aimed at tree or rock) | Cuts down tree / breaks rock; spawns collectible items on the ground |
 | **Attack** | Left click (with weapon equipped) | Hits whatever you’re aiming at, enemies or bosses |
+| **Block** | Hold Right Click | Drains stamina to enter block mode and gives damage reduction |
 | **Open / Close Inventory**| E | Brings up the inventory screen and lets you use your mouse to move items |
 | **Pickup / Store Item** | Drag and drop with left mouse button | Drag items from the world or ground into your inventory slots, or into crafting grids |
+| **Equip Item** | F (while in inventory and hovering over an item) | Equips item into hand slot |
 | **Restart Game** | Left click Restart button | Reloads the scene so you can play again |
 
 ## 3. Key Standout Technical Features
