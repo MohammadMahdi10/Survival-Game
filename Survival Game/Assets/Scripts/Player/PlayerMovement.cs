@@ -2,6 +2,8 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+/// Handles the player's movement.
+/// Allows the player to walk, sprint, and jump while applying gravity and managing stamina.
 public class PlayerMovement : MonoBehaviour
 {
     public PlayerStats stats;
@@ -16,11 +18,15 @@ public class PlayerMovement : MonoBehaviour
     private bool jumpRequested;
     private bool sprintHeld;
 
+    /// Gets the CharacterController component attached to the player.
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
     }
 
+    /// Reads the player's movement, sprint, and jump inputs.
+    /// Updates the player's movement, applies gravity, and allows jumping when grounded.
+    /// Prevents sprinting when stamina is unavailable or the player is not moving.
     private void Update()
     {
         if (InputManager.instance == null ||
@@ -48,7 +54,6 @@ public class PlayerMovement : MonoBehaviour
             transform.right * move.x +
             transform.forward * move.z;
 
-        // Only sprint when stamina is available.
         bool canSprint = sprintHeld &&
                          Mathf.Floor(stats.currentStamina) > 0f &&
                          move.sqrMagnitude > 0f;
@@ -68,6 +73,8 @@ public class PlayerMovement : MonoBehaviour
         controller.Move(velocity * Time.deltaTime);
     }
 
+    /// Stops the player's movement and cancels any pending jump.
+    /// Disables sprinting and resets horizontal velocity.
     public void StopMovement()
     {
         moveInput = Vector2.zero;
