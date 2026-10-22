@@ -10,5 +10,7 @@ public enum ItemType
     BasicSword,
     FireSword,
     WaterBucket,
-    SpecialItem
+    SpecialItem,
+    RepairComponent,
+    Mutton
 }

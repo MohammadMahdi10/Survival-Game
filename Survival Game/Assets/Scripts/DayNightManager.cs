@@ -1,93 +1,99 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
+using System;
 
 public class DayNightManager : MonoBehaviour
 {
-    public float dayDuration = 120f; // Duration of a full day in seconds
+    [Header("Time Settings")]
+    public float dayDurationInSeconds = 120f; // Duration of a full day in seconds
 
-    public float currentTimeOfDay = 12f;
+    [Range(0f, 24f)]
+    public float currentTimeOfDay = 8f; // Current time of day in hours (0-24)
+    public int currentDay = 1;
 
-    public Material daySkybox;
-    public Material nightSkybox;
+    [Header("Hardcore Mode")]
+    public bool hardcoreMode = false;
 
+    [Header("Sun Light Reference")]
+    public Light directionalSun;
 
-    public Light directionalLight;
-    public float maxLightIntensity = 1.2f;
-    public float minLightIntensity = 0.2f;
+    [Header("UI References")]
+    public TextMeshProUGUI dayText;
+    public TextMeshProUGUI timeText;
+    public GameObject hardcoreText;
 
-    private bool isNight = false;
-    void Start()
+    [Header("Sky Color Settings (No Assets)")]
+    public Color daySkyColor = new Color(0.4f, 0.7f, 1f);
+    public Color nightSkyColor = new Color(0.05f, 0.05f, 0.15f);
+    public Color dayEquatorColor = new Color(0.7f, 0.8f, 0.9f);
+    public Color nightEquatorColor = new Color(0.1f, 0.1f, 0.2f);
+
+    private void Start()
     {
-        
+        RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
     }
 
-    void Update()
+    private void Update()
     {
-        currentTimeOfDay += (24f / dayDuration) * Time.deltaTime;
+        currentTimeOfDay += (24f / dayDurationInSeconds) * Time.deltaTime;// Increment time based on day duration
 
-        if (currentTimeOfDay >= 24f)
-        {
-            currentTimeOfDay = 0f;
-        }
+        if (currentTimeOfDay >= 24f) {
+            currentTimeOfDay -= 24f;
+            currentDay++;
 
-        float sunRotation = (currentTimeOfDay / 24f) * 360f - 90f;
-        if(directionalLight != null)
-        {
-            directionalLight.transform.localRotation = Quaternion.Euler(sunRotation, 170f, 0f);
-            directionalLight.intensity = Mathf.Lerp(minLightIntensity, maxLightIntensity, Mathf.Clamp01((currentTimeOfDay - 6f) / 12f));
-        }
-
-        checkDayNightTransition();
-
-        UpdateLightIntensity();
-    }
-
-    private void checkDayNightTransition()
-    {
-        if (currentTimeOfDay >=6f && currentTimeOfDay < 18f)
-        {
-            if (isNight || RenderSettings.skybox != daySkybox)
-            {
-                isNight = false;
-                if (daySkybox != null)
-                {
-                    RenderSettings.skybox = daySkybox;
-                    DynamicGI.UpdateEnvironment();  
-                }
+            if (currentDay >= 2 && !hardcoreMode) {
+                hardcoreMode = true;
+                Debug.Log("HARDCORE!!!!");
             }
         }
-        else
-        {
-            if (!isNight || RenderSettings.skybox != nightSkybox)
-            {
-                isNight = true;
-                if (nightSkybox != null)
-                {
-                    RenderSettings.skybox = nightSkybox;
-                    DynamicGI.UpdateEnvironment();      
-                }
-            }
+
+        if (hardcoreText != null) {
+            hardcoreText.SetActive(hardcoreMode);
         }
+
+        UpdateLightingAndSky();
+        UpdateUI();
     }
 
-    void UpdateLightIntensity() {
-        if (directionalLight == null) return;
-        
-        if (currentTimeOfDay >= 6f && currentTimeOfDay <= 18f)
-        {
-            directionalLight.intensity = Mathf.Lerp(minLightIntensity, maxLightIntensity, Mathf.Sin((currentTimeOfDay - 6f) / 12f * Mathf.PI));
-        }
-        else
-        {
-            directionalLight.intensity = Mathf.Lerp(maxLightIntensity, minLightIntensity, Mathf.Sin((currentTimeOfDay - 18f) / 12f * Mathf.PI));
-        }
-    }
-
-    public string GetFormattedTime()
+    private void UpdateLightingAndSky()
     {
-        int hours = Mathf.FloorToInt(currentTimeOfDay);
-        int minutes = Mathf.FloorToInt((currentTimeOfDay - hours) * 60f);
-        return string.Format("{0:00}:{1:00}", hours, minutes);
+
+        float timePercent = currentTimeOfDay / 24f;
+
+        if (directionalSun != null)
+        {
+            directionalSun.transform.rotation = Quaternion.Euler((timePercent * 360f) - 90f, 170f, 0f);
+
+            float sunIntensity = Mathf.Clamp01(Mathf.Sin(timePercent * Mathf.PI));  
+            directionalSun.intensity = sunIntensity * 1.2f;
+        }
+
+        // Adjust sky and equator colors based on time of day
+        float skyBlend = Mathf.Clamp01(Mathf.Sin(timePercent * Mathf.PI));
+        RenderSettings.ambientSkyColor = Color.Lerp(nightSkyColor, daySkyColor, skyBlend);
+        RenderSettings.ambientEquatorColor = Color.Lerp(nightEquatorColor, dayEquatorColor, skyBlend);
+
+        if(Camera.main != null)
+        {
+            Camera.main.clearFlags = CameraClearFlags.SolidColor;
+            Camera.main.backgroundColor = Color.Lerp(nightSkyColor, daySkyColor, skyBlend);
+        }
+    }
+
+    private void UpdateUI()
+    {
+        if (dayText != null)
+        {
+            dayText.text = "Day " + currentDay;
+        }
+
+        if (timeText != null)
+        {
+            int hours = Mathf.FloorToInt(currentTimeOfDay);
+            int minutes = Mathf.FloorToInt((currentTimeOfDay - hours) * 60f);
+            timeText.text = string.Format("{0:00}:{1:00}", hours, minutes);
+        }
     }
 }

@@ -14,6 +14,7 @@ public class InputManager : MonoBehaviour
     public InputAction jumpAction;
     public InputAction sprintAction;
     public InputAction unlockCursorAction;
+    public InputAction interactAction;
 
     private void Awake()
     {
@@ -27,7 +28,6 @@ public class InputManager : MonoBehaviour
 
         if (controls == null)
         {
-            Debug.LogError("InputManager: No Input Actions asset assigned!");
             return;
         }
 
@@ -35,19 +35,22 @@ public class InputManager : MonoBehaviour
         jumpAction = controls.FindAction("Gameplay/Jump", false);
         unlockCursorAction = controls.FindAction("Gameplay/UnlockCursor", false);
         sprintAction = controls.FindAction("Gameplay/Sprint", false);
-
+        interactAction = controls.FindAction("Gameplay/Interact", false);
     }
 
     private void OnEnable()
     {
         if (controls != null)
+        {
             controls.Enable();
+        }
     }
 
     private void OnDisable()
     {
         if (controls != null)
+        {
             controls.Disable();
+        }
     }
-
 }

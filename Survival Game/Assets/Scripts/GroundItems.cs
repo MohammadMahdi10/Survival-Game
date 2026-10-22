@@ -10,7 +10,10 @@ public class GroundItems : MonoBehaviour
 
     private bool quitting;
 
-    private void OnApplicationQuit() { quitting = true; }
+    private void OnApplicationQuit() {
+        quitting = true;
+
+    }
 
     private void OnEnable()
     {

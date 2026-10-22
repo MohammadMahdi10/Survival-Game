@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class PlayerStats : MonoBehaviour
 {
@@ -30,12 +31,39 @@ public class PlayerStats : MonoBehaviour
     public float thirstDrain = 1f;
 
     [Header("Combat")]
-    public float damageMultiplier = 1f;
     public float damageReduction = 1f;
 
     private bool sprinting;
     private bool blocking;
     private bool isDead = false;
+
+    [Header("Stat Bar Fills")]
+    public Image healthFill;
+    public Image hungerFill;
+    public Image staminaFill;
+
+    [Header("Hardcore Mode")]
+    public DayNightManager dayNightManager;
+    public GameObject respawnButton;
+
+    [Header("Hardcore Stat Multipliers")]
+    public float hardcoreHealthMultiplier = 0.8f;
+    public float hardcoreStaminaMultiplier = 0.8f;
+    public float hardcoreHungerDrainMultiplier = 1.5f;
+    public float hardcoreThirstDrainMultiplier = 1.5f;
+
+    private bool hardcoreStatsApplied = false;
+
+    [Header("World Difficulty")]
+    public WorldDifficultyManager worldDifficultyManager;
+
+    public float worldHealthPenalty = 0.4f;
+    public float worldStaminaPenalty = 0.4f;
+
+    private float baseMaxHealth;
+    private float baseMaxStamina;
+    private float baseHungerDrain;
+    private float baseThirstDrain;
 
     private void Awake()
     {
@@ -45,7 +73,12 @@ public class PlayerStats : MonoBehaviour
         currentThirst = Mathf.Clamp(currentThirst, 0f, maxThirst);
 
         if (gameOverUI != null)
-            gameOverUI.SetActive(false);    
+            gameOverUI.SetActive(false);
+
+        baseMaxHealth = maxHealth;
+        baseMaxStamina = maxStamina;
+        baseHungerDrain = hungerDrain;
+        baseThirstDrain = thirstDrain;
     }
 
     private void Start()
@@ -55,6 +88,12 @@ public class PlayerStats : MonoBehaviour
 
     private void Update()
     {
+        if (dayNightManager != null && dayNightManager.hardcoreMode && !hardcoreStatsApplied) {
+            ApplyHardcoreStats();
+        }
+
+        UpdateDifficultyStats();
+        UpdateStatBars();
         if (isDead) return;
 
         if (!sprinting && !blocking)
@@ -85,7 +124,7 @@ public class PlayerStats : MonoBehaviour
     public void SetBlocking(bool active)
     {
         blocking = active && currentStamina > 0f;
-        damageReduction = blocking ? 0.8f : 1f;
+        damageReduction = blocking ? 0.1f : 1f;
     }
 
     public void TakeDamage(float amount)
@@ -116,6 +155,12 @@ public class PlayerStats : MonoBehaviour
         // 1. Display Game Over overlay
         if (gameOverUI != null)
             gameOverUI.SetActive(true);
+
+        if (dayNightManager != null && dayNightManager.hardcoreMode) {
+            if (respawnButton != null) {
+                respawnButton.SetActive(false);
+            }
+        }
 
         // 2. Unlock and show cursor for button interaction
         Cursor.lockState = CursorLockMode.None;
@@ -182,5 +227,47 @@ public class PlayerStats : MonoBehaviour
             ChangeThirst(-thirstDrain);
             yield return new WaitForSeconds(1f);
         }
+    }
+    private void UpdateStatBars()
+    {
+        if (healthFill != null)
+            healthFill.fillAmount = currentHealth / maxHealth;
+
+        if (hungerFill != null)
+            hungerFill.fillAmount = currentHunger / maxHunger;
+
+        if (staminaFill != null)
+            staminaFill.fillAmount = currentStamina / maxStamina;
+    }
+
+    private void ApplyHardcoreStats() {
+        if (hardcoreStatsApplied) {
+            return;
+        }
+
+        hardcoreStatsApplied = true;
+    }
+
+    public void UpdateDifficultyStats() {
+        float difficulty = worldDifficultyManager != null ? worldDifficultyManager.worldDifficulty : 1f;
+
+        float increase = Mathf.Max(0f, difficulty - 1f);
+
+        float hardcoreHealth = hardcoreStatsApplied ? hardcoreHealthMultiplier : 1f;
+        float hardcoreStamina = hardcoreStatsApplied ? hardcoreStaminaMultiplier : 1f;
+        float hardcoreHunger = hardcoreStatsApplied ? hardcoreHungerDrainMultiplier : 1f;
+        float hardcoreThirst = hardcoreStatsApplied ? hardcoreThirstDrainMultiplier : 1f;
+
+        float newMaxHealth = baseMaxHealth * hardcoreHealth * Mathf.Max(0.1f, 1f - increase * worldHealthPenalty);
+        float newMaxStamina = baseMaxStamina * hardcoreStamina * Mathf.Max(0.1f, 1f - increase * worldStaminaPenalty);
+
+        maxHealth = newMaxHealth;
+        maxStamina = newMaxStamina;
+
+        currentHealth = Mathf.Min(currentHealth, maxHealth);
+        currentStamina = Mathf.Min(currentStamina, maxStamina);
+
+        hungerDrain = baseHungerDrain * hardcoreHunger * difficulty;
+        thirstDrain = baseThirstDrain * hardcoreThirst * difficulty;
     }
 }

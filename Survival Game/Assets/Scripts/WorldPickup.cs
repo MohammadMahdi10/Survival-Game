@@ -18,7 +18,9 @@ public class WorldPickup : MonoBehaviour
     private void Update()
     {
         // The special item never despawns, or the player could lose it for good
-        if (type == ItemType.SpecialItem) return;
+        if (type == ItemType.SpecialItem || type == ItemType.RepairComponent) {
+            return;
+        }
 
         // Only check once a second, it doesn't need to run every frame
         if (Time.time < nextCheck) return;
