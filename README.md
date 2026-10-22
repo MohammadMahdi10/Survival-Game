@@ -38,7 +38,7 @@ We built a working prototype focused on survival basics: gathering resources, cr
 * We’ve added ground checks so items always sit flat on the terrain and won’t float in mid‑air or clip through the floor or enemies.
 * The inventory reads drag events of the items that are on the ground or you already possess from the UI, so you can pick up items straight from the ground, drag them into your inventory slots, or straight into the crafting options to make something new. Everything updates instantly when you move it.
 
-### . Boss AI & Damage System – MiniBossAI.cs / EnemyHealth.cs
+### C. Boss AI & Damage System – MiniBossAI.cs / EnemyHealth.cs
 * The boss uses Unity’s NavMesh to find its way around the map and we set the navigation limits to allow slopes up to 50° and steps up to 0.8m high, so it can move properly across our different terrain types.
 * It will only start chasing you once you’re within 15 metres. When it gets close, it uses a timed attack routine to damage you.
 * Damage calculation checks what weapon you’re using. If you hit the Ice Boss with the Fire Sword, it applies a ×2 multiplier and this is set up so we can easily add more enemy types and elemental match‑ups later.
