@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+/// Handles the player's interaction with the spaceship.
+/// Allows the player to repair the spaceship by delivering the required component and complete the game.
 public class SpaceshipInteraction : MonoBehaviour {
 
     [Header("References")]
@@ -18,6 +20,9 @@ public class SpaceshipInteraction : MonoBehaviour {
 
     private bool repaired = false;
 
+    /// Checks whether the player can interact with the spaceship.
+    /// Prevents further interactions once the spaceship has been repaired.
+    /// Attempts to repair the spaceship when the player presses the interaction button.
     private void Update() {
         if (repaired) {
             return;
@@ -42,6 +47,9 @@ public class SpaceshipInteraction : MonoBehaviour {
         }
     }
 
+    /// Checks whether the player can repair the spaceship.
+    /// Requires the player to be within range, at the correct quest stage, and carrying a repair component.
+    /// Completes the quest, displays the win screen, and pauses the game after a successful repair.
     private void TryRepairSpaceship()
     {
         if (player == null || playerInventory == null ||
@@ -76,6 +84,5 @@ public class SpaceshipInteraction : MonoBehaviour {
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
         Time.timeScale = 0f;
-
     }
 }
