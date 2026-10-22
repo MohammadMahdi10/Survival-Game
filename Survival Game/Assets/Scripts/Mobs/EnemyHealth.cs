@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using Unity.Jobs;
 using UnityEngine;
 using UnityEngine.UI;
+
+/// Manages enemy health, damage and death.
+/// Handles elemental weaknesses, health bar updates, item drops
+/// and quest progression when bosses are defeated.
 public enum BiomeType
 {
     Default,
@@ -46,6 +50,9 @@ public class EnemyHealth : MonoBehaviour
         UpdateHealthUI();
     }
 
+    /// Updates the health bar to reflect the enemy's remaining health.
+    /// Uses a proportion of maximum health so the same UI works
+    /// for enemies with different health values.
     void UpdateHealthUI()
     {
         if (healthFillImage != null)
@@ -54,6 +61,9 @@ public class EnemyHealth : MonoBehaviour
         }
     }
 
+    /// Applies incoming damage and updates the enemy's health.
+    /// Fire weapons deal extra damage to ice enemies to reward
+    /// using the correct elemental weapon against their weakness.
     public void TakeDamage(float damage, ItemType weaponType = ItemType.BasicSword)
     {
         float finalDamage = damage;
@@ -76,6 +86,9 @@ public class EnemyHealth : MonoBehaviour
         }
     }
 
+    /// Handles enemy death, including quest updates and item drops.
+    /// Defeating a mini-boss also increases world difficulty so
+    /// subsequent encounters become more challenging.
     void Die() {
 
         Debug.Log("Enemy has died!");
@@ -96,6 +109,9 @@ public class EnemyHealth : MonoBehaviour
         }
 
         if (dropsItem) {
+
+            // Disable colliders before spawning loot so it can
+            // appear near the enemy without colliding with its body.
             foreach (Collider c in GetComponentsInChildren<Collider>()) {
                 c.enabled = false;
             }

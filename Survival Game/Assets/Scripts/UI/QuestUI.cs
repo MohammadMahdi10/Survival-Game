@@ -3,15 +3,21 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
+/// Handles the quest UI.
+/// Displays the player's current objective based on the active quest stage.
 public class QuestUI : MonoBehaviour
 {
     [SerializeField] private QuestManager questManager;
     [SerializeField] private TextMeshProUGUI questObjective;
 
+    /// Updates the quest display when the UI starts.
+    /// Shows the objective for the player's current quest stage.
     private void Start() {
         UpdateQuestDisplay();
     }
 
+    /// Updates the quest objective text based on the current quest stage.
+    /// Displays the appropriate objective or completion message for each stage.
     public void UpdateQuestDisplay() {
         QuestManager.QuestStage stage = questManager.GetCurrentStage();
 

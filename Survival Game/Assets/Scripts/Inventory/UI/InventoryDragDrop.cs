@@ -4,20 +4,24 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
+/// Handles dragging, dropping, rotating and equipping inventory items.
+/// Allows items to move between inventory grids and updates quest progress
+/// when special quest items are collected from the ground.
 public class InventoryDragDrop : MonoBehaviour
 {
+    /// Stores an inventory and the UI layer used to display its items.
     [Serializable]
     public class GridView
     {
         public GridInventory inventory;
-        public RectTransform layer;   // the item layer that sits on top of this grid
+        public RectTransform layer;
     }
 
     [SerializeField] private GridView[] grids;
     [SerializeField] private float cellSize = 100f;
     [SerializeField] private float spacing = 10f;
     [SerializeField] private EquipmentManager equipment;
-    [SerializeField] private RectTransform equippedSlot;   // the HUD slot, for unequipping
+    [SerializeField] private RectTransform equippedSlot;
 
     private RectTransform panel;
     private RectTransform ghostRoot;
@@ -35,16 +39,22 @@ public class InventoryDragDrop : MonoBehaviour
     [SerializeField] private GridInventory groundInventory;
     [SerializeField] private GridInventory playerInventory;
 
+    /// Calculates the distance between neighbouring inventory cells,
+    /// including the spacing between them.
     private float Step => cellSize + spacing;
 
+
+    /// Gets the RectTransform of the inventory panel when the script starts.
     private void Awake()
     {
         panel = (RectTransform)transform;
     }
 
+    /// Returns a held item to its original inventory position
+    /// if the inventory closes during dragging.
+    /// This prevents items from disappearing when a drag is interrupted.
     private void OnDisable()
     {
-        // Closing the inventory mid-drag puts the item back where it came from
         if (holding)
         {
             sourceGrid.inventory.Place(heldType, sourceShape, sourceOrigin);
@@ -52,6 +62,10 @@ public class InventoryDragDrop : MonoBehaviour
         }
     }
 
+
+    /// Converts the mouse's screen position into a cell position
+    /// within an inventory grid.
+    /// Returns true if the position is inside the grid.
     private bool TryGetCell(GridView g, Vector2 screen, out Vector2Int cell)
     {
         RectTransformUtility.ScreenPointToLocalPointInRectangle(g.layer, screen, null, out Vector2 p);
@@ -62,6 +76,9 @@ public class InventoryDragDrop : MonoBehaviour
                cell.x < g.inventory.Width && cell.y < g.inventory.Height;
     }
 
+
+    /// Finds which inventory grid the mouse is currently hovering over.
+    /// Returns null if the mouse is not over an active grid.
     private GridView GridUnderMouse(Vector2 screen, out Vector2Int cell)
     {
         foreach (var g in grids)
@@ -71,7 +88,9 @@ public class InventoryDragDrop : MonoBehaviour
         return null;
     }
 
-    // Top-left corner of a grid, in this panel's space (y points down)
+    /// Converts the grid's top-left corner into the inventory panel's
+    /// coordinate space. This allows items to align correctly even
+    /// when the inventory grids have different parent UI objects.
     private Vector2 GridCorner(GridView g)
     {
         Rect r = g.layer.rect;
@@ -81,6 +100,10 @@ public class InventoryDragDrop : MonoBehaviour
         return new Vector2(p.x - pr.xMin, pr.yMax - p.y);
     }
 
+
+    /// Handles inventory mouse and keyboard input every frame.
+    /// Allows the player to pick up, move, rotate, place, equip
+    /// and unequip items, and updates quests when special items are collected.
     private void Update()
     {
         if (Mouse.current == null) return;
@@ -146,6 +169,9 @@ public class InventoryDragDrop : MonoBehaviour
             if (valid) {
                 hover.inventory.Place(heldType, heldShape, origin);
 
+
+                // Only update collection quests when an item moves from the ground
+                // into the player's backpack, preventing false quest progression.
                 if (sourceGrid.inventory == groundInventory && hover.inventory == playerInventory) {
                     if (questManager != null) {
                         if (heldType == ItemType.SpecialItem) {
@@ -166,6 +192,10 @@ public class InventoryDragDrop : MonoBehaviour
         }
     }
 
+
+    /// Picks up an item from an inventory grid when clicked.
+    /// Saves its original position and shape, removes it from the grid,
+    /// and creates a visual preview while dragging.
     private void TryPickUp(GridView g, Vector2Int cell)
     {
         PlacedItem item = g.inventory.GetItemAt(cell);
@@ -183,12 +213,16 @@ public class InventoryDragDrop : MonoBehaviour
         BuildGhost();
     }
 
+    /// Finishes dragging an item and hides its visual preview.
     private void EndHold()
     {
         holding = false;
         if (ghostRoot != null) ghostRoot.gameObject.SetActive(false);
     }
 
+
+    /// Creates or refreshes the visual preview of the held item.
+    /// Displays the item's shape, colour and label while it is being dragged.
     private void BuildGhost()
     {
         if (ghostRoot == null)
@@ -213,6 +247,9 @@ public class InventoryDragDrop : MonoBehaviour
             var rt = (RectTransform)go.transform;
             rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0, 1);
 
+
+            // Extend neighbouring cells into the spacing between them
+            // so multi cell items appear as one connected shape.
             float w = cellSize + (cells.Contains(offset + new Vector2Int(1, 0)) ? spacing : 0f);
             float h = cellSize + (cells.Contains(offset + new Vector2Int(0, 1)) ? spacing : 0f);
             rt.sizeDelta = new Vector2(w, h);

@@ -39,8 +39,11 @@ public class WeaponStats : MonoBehaviour
     [SerializeField] private float hardcoreDamageMultiplier = 0.75f;
 
 
-    /// Creates the weapon statistics dictionary when first accessed.
-    /// Stores each weapon's damage multiplier and elemental damage type.
+
+    /// Creates weapon statistics only when first accessed.
+    /// Keeping weapon data in one dictionary makes it easier
+    /// to add new weapons without duplicating their statistics.
+
     private Dictionary<ItemType, WeaponData> Stats
     {
         get
@@ -74,9 +77,12 @@ public class WeaponStats : MonoBehaviour
     }
 
 
-    /// Calculates a weapon's damage and applies the hardcore damage
-    /// reduction when hardcore mode is active.
-    /// Returns zero if the weapon has no stored statistics.
+
+    /// Calculates a weapon's total damage and reduces it in hardcore mode.
+    /// This allows the same weapon statistics to be reused across
+    /// difficulty modes without changing the original weapon values.
+    /// Returns zero if the item has no weapon statistics.
+
     public float GetDamage(ItemType item) {
         WeaponData data = GetStats(item);
 

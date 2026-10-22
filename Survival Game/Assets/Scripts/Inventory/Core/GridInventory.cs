@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// Stores information about an item placed inside an inventory grid,
+/// including its type, position and shape.
 public class PlacedItem
 {
     public ItemType type;
@@ -9,6 +11,8 @@ public class PlacedItem
     public Vector2Int[] shape;
 }
 
+/// Manages a grid based inventory where items occupy different cell shapes.
+/// Handles placing, removing, counting and locating items within the grid.
 public class GridInventory : MonoBehaviour
 {
     [SerializeField] private int width = 5;
@@ -23,7 +27,8 @@ public class GridInventory : MonoBehaviour
     public int Height => height;
     public IReadOnlyList<PlacedItem> Items => items;
 
-    // Created on first use, so it works even while the panel is inactive
+    /// Creates the inventory cell array when it is first needed.
+    /// This allows the inventory to work even when its UI panel is inactive.
     private PlacedItem[,] Cells
     {
         get
@@ -33,6 +38,10 @@ public class GridInventory : MonoBehaviour
         }
     }
 
+    /// Checks whether every cell of an item fits within the inventory
+    /// without overlapping other items.
+    /// This prevents items from being placed outside the grid
+    /// or occupying cells that are already in use.
     public bool CanPlace(Vector2Int[] shape, Vector2Int origin)
     {
         foreach (var offset in shape)
@@ -44,6 +53,11 @@ public class GridInventory : MonoBehaviour
         return true;
     }
 
+
+    /// Places an item into the inventory if its cells are available.
+    /// Records the item in the grid and item list, then triggers the
+    /// Changed event so the inventory UI can update automatically.
+    /// Returns null if the item cannot be placed.
     public PlacedItem Place(ItemType type, Vector2Int[] shape, Vector2Int origin)
     {
         if (!CanPlace(shape, origin)) return null;
@@ -59,7 +73,9 @@ public class GridInventory : MonoBehaviour
         return item;
     }
 
-    // Finds the first free spot, scanning left to right, top to bottom
+    /// Finds the first available space for an item by searching the grid
+    /// from left to right and top to bottom.
+    /// Returns null if the item does not fit anywhere.
     public PlacedItem TryAddItem(ItemType type)
     {
         Vector2Int[] shape = ItemShapes.GetShape(type);
@@ -70,6 +86,8 @@ public class GridInventory : MonoBehaviour
         return null;
     }
 
+    /// Removes an item from the inventory.
+    /// Frees its occupied cells and notifies other scripts of the change.
     public void Remove(PlacedItem item)
     {
         foreach (var offset in item.shape)
@@ -81,6 +99,8 @@ public class GridInventory : MonoBehaviour
         Changed?.Invoke();
     }
 
+    /// Finds and removes one item of the specified type.
+    /// Returns true if an item was removed, or false if none was found.
     public bool RemoveOne(ItemType type)
     {
         foreach (var item in items)
@@ -94,6 +114,7 @@ public class GridInventory : MonoBehaviour
         return false;
     }
 
+    /// Counts how many items of a specific type are stored in the inventory.
     public int Count(ItemType type)
     {
         int n = 0;
@@ -101,12 +122,16 @@ public class GridInventory : MonoBehaviour
         return n;
     }
 
+    /// Returns the item occupying a particular inventory cell.
+    /// Returns null if the cell is empty or outside the grid.
     public PlacedItem GetItemAt(Vector2Int cell)
     {
         if (cell.x < 0 || cell.y < 0 || cell.x >= width || cell.y >= height) return null;
         return Cells[cell.x, cell.y];
     }
 
+    /// Adds a collection of test items to the inventory during Play Mode.
+    /// Logs whether each item was successfully placed.
     [ContextMenu("Test Fill")]
     private void TestFill()
     {
@@ -121,10 +146,16 @@ public class GridInventory : MonoBehaviour
             Debug.Log(t + (TryAddItem(t) != null ? " placed" : " DID NOT FIT"));
     }
 
+    /// Removes all items from the inventory during Play Mode.
+    /// Used for quickly testing an empty inventory.
     [ContextMenu("Test Clear")]
     private void TestClear()
     {
         if (!Application.isPlaying) return;
+
+
+        // Iterate over a copy because Remove() modifies the original list.
+        // This prevents errors caused by changing a collection during iteration.
         foreach (var item in new List<PlacedItem>(items)) Remove(item);
     }
 }
