@@ -43,7 +43,7 @@ public class DayNightManager : MonoBehaviour
             currentTimeOfDay -= 24f;
             currentDay++;
 
-            if (currentDay >= 2 && !hardcoreMode) {
+            if (currentDay >= 3 && !hardcoreMode) {
                 hardcoreMode = true;
                 Debug.Log("HARDCORE!!!!");
             }
