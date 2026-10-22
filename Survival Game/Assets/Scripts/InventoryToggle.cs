@@ -6,6 +6,7 @@ public class InventoryToggle : MonoBehaviour
     [SerializeField] private GameObject inventoryPanel;
     [SerializeField] private GameObject craftingMenu;
     [SerializeField] private GameObject darkOverlay;
+    [SerializeField] private GameObject groundPanel;
 
     [SerializeField] private PlayerMovement playerMovement;
     [SerializeField] private MonoBehaviour mouseLook;
@@ -25,8 +26,9 @@ public class InventoryToggle : MonoBehaviour
 
 
         bool isOpen = !inventoryPanel.activeSelf;
-
+        
         inventoryPanel.SetActive(isOpen);
+        groundPanel.SetActive(isOpen);
         craftingMenu.SetActive(isOpen);
         darkOverlay.SetActive(isOpen);
 
