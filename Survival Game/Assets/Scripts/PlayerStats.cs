@@ -42,6 +42,18 @@ public class PlayerStats : MonoBehaviour
     public Image hungerFill;
     public Image staminaFill;
 
+    [Header("Hardcore Mode")]
+    public DayNightManager dayNightManager;
+    public GameObject respawnButton;
+
+    [Header("Hardcore Stat Multipliers")]
+    public float hardcoreHealthMultiplier = 0.8f;
+    public float hardcoreStaminaMultiplier = 0.8f;
+    public float hardcoreHungerDrainMultiplier = 1.5f;
+    public float hardcoreThirstDrainMultiplier = 1.5f;
+
+    private bool hardcoreStatsApplied = false;
+
     private void Awake()
     {
         currentHealth = Mathf.Clamp(currentHealth, 0f, maxHealth);
@@ -60,6 +72,10 @@ public class PlayerStats : MonoBehaviour
 
     private void Update()
     {
+        if (dayNightManager != null && dayNightManager.hardcoreMode && !hardcoreStatsApplied) {
+            ApplyHardcoreStats();
+        }
+
         UpdateStatBars();
         if (isDead) return;
 
@@ -122,6 +138,12 @@ public class PlayerStats : MonoBehaviour
         // 1. Display Game Over overlay
         if (gameOverUI != null)
             gameOverUI.SetActive(true);
+
+        if (dayNightManager != null && dayNightManager.hardcoreMode) {
+            if (respawnButton != null) {
+                respawnButton.SetActive(false);
+            }
+        }
 
         // 2. Unlock and show cursor for button interaction
         Cursor.lockState = CursorLockMode.None;
@@ -199,5 +221,22 @@ public class PlayerStats : MonoBehaviour
 
         if (staminaFill != null)
             staminaFill.fillAmount = currentStamina / maxStamina;
+    }
+
+    public void ApplyHardcoreStats() {
+        if (hardcoreStatsApplied) {
+            return;
+        }
+
+        hardcoreStatsApplied = true;
+
+        maxHealth *= hardcoreHealthMultiplier;
+        currentHealth = Mathf.Min(currentHealth, maxHealth);
+
+        maxStamina *= hardcoreStaminaMultiplier;
+        currentStamina = Mathf.Min(currentStamina, maxStamina);
+
+        hungerDrain *= hardcoreHungerDrainMultiplier;
+        thirstDrain *= hardcoreThirstDrainMultiplier;
     }
 }

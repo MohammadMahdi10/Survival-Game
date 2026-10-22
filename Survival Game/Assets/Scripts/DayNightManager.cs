@@ -13,12 +13,16 @@ public class DayNightManager : MonoBehaviour
     public float currentTimeOfDay = 8f; // Current time of day in hours (0-24)
     public int currentDay = 1;
 
+    [Header("Hardcore Mode")]
+    public bool hardcoreMode = false;
+
     [Header("Sun Light Reference")]
     public Light directionalSun;
 
     [Header("UI References")]
     public TextMeshProUGUI dayText;
     public TextMeshProUGUI timeText;
+    public GameObject hardcoreText;
 
     [Header("Sky Color Settings (No Assets)")]
     public Color daySkyColor = new Color(0.4f, 0.7f, 1f);
@@ -35,10 +39,18 @@ public class DayNightManager : MonoBehaviour
     {
         currentTimeOfDay += (24f / dayDurationInSeconds) * Time.deltaTime;// Increment time based on day duration
 
-        if (currentTimeOfDay >= 24f)
-        {
+        if (currentTimeOfDay >= 24f) {
             currentTimeOfDay -= 24f;
             currentDay++;
+
+            if (currentDay >= 2 && !hardcoreMode) {
+                hardcoreMode = true;
+                Debug.Log("HARDCORE!!!!");
+            }
+        }
+
+        if (hardcoreText != null) {
+            hardcoreText.SetActive(hardcoreMode);
         }
 
         UpdateLightingAndSky();

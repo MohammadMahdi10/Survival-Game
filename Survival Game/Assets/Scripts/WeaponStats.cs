@@ -29,6 +29,10 @@ public class WeaponStats : MonoBehaviour
 {
     private Dictionary<ItemType, WeaponData> weaponStats;
 
+    [Header("Hardcore Mode")]
+    [SerializeField] private DayNightManager dayNightManager;
+    [SerializeField] private float hardcoreDamageMultiplier = 0.75f;
+
     private Dictionary<ItemType, WeaponData> Stats
     {
         get
@@ -56,5 +60,21 @@ public class WeaponStats : MonoBehaviour
         return Stats.TryGetValue(item, out var data)
             ? data
             : null;
+    }
+
+    public float GetDamage(ItemType item) {
+        WeaponData data = GetStats(item);
+
+        if (data == null) {
+            return 0f;
+        }
+
+        float damage = data.TotalDamage;
+
+        if (dayNightManager != null && dayNightManager.hardcoreMode) {
+            damage *= hardcoreDamageMultiplier;
+        }
+
+        return damage;
     }
 }

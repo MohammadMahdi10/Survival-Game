@@ -9,6 +9,10 @@ public class MeleeCombat : MonoBehaviour
     public WeaponStats weaponStats;
     public EquipmentManager equipment;
 
+    [Header("Hardcore Mode")]
+    public DayNightManager dayNightManager;
+    public float hardcoreDamageMultiplier = 0.75f;
+
     void Update()
     {
         if (Input.GetMouseButtonDown(0) && Cursor.lockState == CursorLockMode.Locked)
@@ -43,7 +47,13 @@ public class MeleeCombat : MonoBehaviour
                 if (enemy.biomeType == BiomeType.Ice && stats.damageType == DamageType.Fire){
                     typeBonus = 2f;
                 }
-                enemy.TakeDamage(1f * stats.damageMultiplier * typeBonus);
+                float damage = 1f * stats.damageMultiplier * typeBonus;
+
+                if (dayNightManager != null && dayNightManager.hardcoreMode) {
+                    damage *= hardcoreDamageMultiplier;
+                }
+
+                enemy.TakeDamage(damage);
             }
         }
         else
