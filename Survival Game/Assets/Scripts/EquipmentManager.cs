@@ -27,6 +27,7 @@ public class EquipmentManager : MonoBehaviour
         Equipped = newType;
         HasEquipped = true;
         Changed?.Invoke();
+        Debug.Log("EQUIPPED: " + Equipped);
         return true;
     }
 
