@@ -1,10 +1,11 @@
-
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
+/// Handles the player's stats and survival mechanics.
+/// Manages health, stamina, hunger, damage reduction, difficulty scaling, and death.
 public class PlayerStats : MonoBehaviour
 {
     [Header("Health")]
@@ -23,12 +24,7 @@ public class PlayerStats : MonoBehaviour
     [Header("Hunger")]
     public float maxHunger = 100f;
     public float currentHunger = 100f;
-
-    [Header("Thirst")]
-    public float maxThirst = 100f;
-    public float currentThirst = 100f;
     public float hungerDrain = 1f;
-    public float thirstDrain = 1f;
 
     [Header("Combat")]
     public float damageReduction = 1f;
@@ -50,7 +46,6 @@ public class PlayerStats : MonoBehaviour
     public float hardcoreHealthMultiplier = 0.8f;
     public float hardcoreStaminaMultiplier = 0.8f;
     public float hardcoreHungerDrainMultiplier = 1.5f;
-    public float hardcoreThirstDrainMultiplier = 1.5f;
 
     private bool hardcoreStatsApplied = false;
 
@@ -63,14 +58,14 @@ public class PlayerStats : MonoBehaviour
     private float baseMaxHealth;
     private float baseMaxStamina;
     private float baseHungerDrain;
-    private float baseThirstDrain;
 
+    /// Initialises the player's stats and stores their base values.
+    /// Hides the Game Over UI and ensures current stats are within their limits.
     private void Awake()
     {
         currentHealth = Mathf.Clamp(currentHealth, 0f, maxHealth);
         currentStamina = Mathf.Clamp(currentStamina, 0f, maxStamina);
         currentHunger = Mathf.Clamp(currentHunger, 0f, maxHunger);
-        currentThirst = Mathf.Clamp(currentThirst, 0f, maxThirst);
 
         if (gameOverUI != null)
             gameOverUI.SetActive(false);
@@ -78,14 +73,16 @@ public class PlayerStats : MonoBehaviour
         baseMaxHealth = maxHealth;
         baseMaxStamina = maxStamina;
         baseHungerDrain = hungerDrain;
-        baseThirstDrain = thirstDrain;
     }
 
+    /// Starts the coroutine that gradually drains the player's hunger.
     private void Start()
     {
         StartCoroutine(StatDrain());
     }
 
+    /// Updates the player's stats and UI every frame.
+    /// Applies hardcore and world difficulty settings and manages stamina consumption and regeneration.
     private void Update()
     {
         if (dayNightManager != null && dayNightManager.hardcoreMode && !hardcoreStatsApplied) {
@@ -101,7 +98,7 @@ public class PlayerStats : MonoBehaviour
             RestoreStamina(staminaRegenRate * Time.deltaTime);
         }
 
-        // Centralized stamina consumption.
+        // Calculates stamina consumption based on the player's current actions.
         float drain = 0f;
 
         if (sprinting)
@@ -116,17 +113,23 @@ public class PlayerStats : MonoBehaviour
         }
     }
 
+    /// Updates whether the player is sprinting.
+    /// Prevents sprinting when the player has no stamina remaining.
     public void SetSprinting(bool active)
     {
         sprinting = active && currentStamina > 0f;
     }
 
+    /// Updates whether the player is blocking.
+    /// Reduces incoming damage while blocking and restores normal damage when blocking stops.
     public void SetBlocking(bool active)
     {
         blocking = active && currentStamina > 0f;
         damageReduction = blocking ? 0.1f : 1f;
     }
 
+    /// Reduces the player's health when they take damage.
+    /// Causes the player to die when their health reaches zero.
     public void TakeDamage(float amount)
     {
         if (isDead) return;
@@ -140,6 +143,8 @@ public class PlayerStats : MonoBehaviour
             Die();
     }
 
+    /// Restores the player's health by the specified amount.
+    /// Prevents health from exceeding its maximum value.
     public void Heal(float amount)
     {
         currentHealth = Mathf.Clamp(
@@ -147,12 +152,15 @@ public class PlayerStats : MonoBehaviour
         );
     }
 
+    /// Handles the player's death.
+    /// Displays the Game Over UI, disables player controls, and freezes the game.
+    /// Hides the respawn button when hardcore mode is active.
     private void Die()
     {
         isDead = true;
         Debug.Log("Player has died!");
 
-        // 1. Display Game Over overlay
+        // Displays the Game Over overlay.
         if (gameOverUI != null)
             gameOverUI.SetActive(true);
 
@@ -162,11 +170,11 @@ public class PlayerStats : MonoBehaviour
             }
         }
 
-        // 2. Unlock and show cursor for button interaction
+        // Unlocks and displays the cursor for button interaction.
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        // 3. Disable all movement, look, and input scripts on player and child objects
+        // Disables movement, camera, and other scripts on the player and its children.
         MonoBehaviour[] scripts = GetComponentsInChildren<MonoBehaviour>();
         foreach (var script in scripts)
         {
@@ -176,16 +184,20 @@ public class PlayerStats : MonoBehaviour
             }
         }
 
-        // 4. Freeze engine time
+        // Freezes the game when the player dies.
         Time.timeScale = 0f;
     }
 
+    /// Restarts the current scene.
+    /// Resets the game's time scale before reloading the scene.
     public void RestartGame()
     {
-        Time.timeScale = 1f; // Resume the game
+        Time.timeScale = 1f;
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
+    /// Consumes the specified amount of stamina.
+    /// Returns false if the player does not have enough stamina.
     public bool UseStamina(float amount)
     {
         if (currentStamina < amount)
@@ -198,6 +210,8 @@ public class PlayerStats : MonoBehaviour
         return true;
     }
 
+    /// Restores the player's stamina by the specified amount.
+    /// Prevents stamina from exceeding its maximum value.
     public void RestoreStamina(float amount)
     {
         currentStamina = Mathf.Clamp(
@@ -205,6 +219,8 @@ public class PlayerStats : MonoBehaviour
         );
     }
 
+    /// Changes the player's hunger by the specified amount.
+    /// Allows hunger to increase or decrease without exceeding its limits.
     public void ChangeHunger(float amount)
     {
         currentHunger = Mathf.Clamp(
@@ -212,22 +228,19 @@ public class PlayerStats : MonoBehaviour
         );
     }
 
-    public void ChangeThirst(float amount)
-    {
-        currentThirst = Mathf.Clamp(
-            currentThirst + amount, 0f, maxThirst
-        );
-    }
-
+    /// Gradually drains the player's hunger over time.
+    /// Continues reducing hunger once every second.
     private IEnumerator StatDrain()
     {
         while (true)
         {
             ChangeHunger(-hungerDrain);
-            ChangeThirst(-thirstDrain);
             yield return new WaitForSeconds(1f);
         }
     }
+
+    /// Updates the health, hunger, and stamina UI bars.
+    /// Sets each bar's fill amount based on the player's current stats.
     private void UpdateStatBars()
     {
         if (healthFill != null)
@@ -240,6 +253,8 @@ public class PlayerStats : MonoBehaviour
             staminaFill.fillAmount = currentStamina / maxStamina;
     }
 
+    /// Marks hardcore stat adjustments as applied.
+    /// Prevents hardcore stats from being applied more than once.
     private void ApplyHardcoreStats() {
         if (hardcoreStatsApplied) {
             return;
@@ -248,6 +263,9 @@ public class PlayerStats : MonoBehaviour
         hardcoreStatsApplied = true;
     }
 
+    /// Adjusts the player's maximum health, stamina, and hunger drain.
+    /// Applies hardcore mode multipliers and penalties based on world difficulty.
+    /// Keeps current health and stamina within their updated maximum values.
     public void UpdateDifficultyStats() {
         float difficulty = worldDifficultyManager != null ? worldDifficultyManager.worldDifficulty : 1f;
 
@@ -256,7 +274,6 @@ public class PlayerStats : MonoBehaviour
         float hardcoreHealth = hardcoreStatsApplied ? hardcoreHealthMultiplier : 1f;
         float hardcoreStamina = hardcoreStatsApplied ? hardcoreStaminaMultiplier : 1f;
         float hardcoreHunger = hardcoreStatsApplied ? hardcoreHungerDrainMultiplier : 1f;
-        float hardcoreThirst = hardcoreStatsApplied ? hardcoreThirstDrainMultiplier : 1f;
 
         float newMaxHealth = baseMaxHealth * hardcoreHealth * Mathf.Max(0.1f, 1f - increase * worldHealthPenalty);
         float newMaxStamina = baseMaxStamina * hardcoreStamina * Mathf.Max(0.1f, 1f - increase * worldStaminaPenalty);
@@ -268,6 +285,5 @@ public class PlayerStats : MonoBehaviour
         currentStamina = Mathf.Min(currentStamina, maxStamina);
 
         hungerDrain = baseHungerDrain * hardcoreHunger * difficulty;
-        thirstDrain = baseThirstDrain * hardcoreThirst * difficulty;
     }
 }
