@@ -31,7 +31,6 @@ public class PlayerStats : MonoBehaviour
     public float thirstDrain = 1f;
 
     [Header("Combat")]
-    public float damageMultiplier = 1f;
     public float damageReduction = 1f;
 
     private bool sprinting;
@@ -92,7 +91,7 @@ public class PlayerStats : MonoBehaviour
     public void SetBlocking(bool active)
     {
         blocking = active && currentStamina > 0f;
-        damageReduction = blocking ? 0.8f : 1f;
+        damageReduction = blocking ? 0.1f : 1f;
     }
 
     public void TakeDamage(float amount)
