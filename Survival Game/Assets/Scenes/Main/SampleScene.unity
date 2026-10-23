@@ -15893,7 +15893,7 @@ PrefabInstance:
       objectReference: {fileID: 440980378}
     - target: {fileID: 4863642366822489891, guid: 3fe166775ffbedd46bdb0c8cb5941b68, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6791722469181753011, guid: 3fe166775ffbedd46bdb0c8cb5941b68, type: 3}
       propertyPath: dropItem
