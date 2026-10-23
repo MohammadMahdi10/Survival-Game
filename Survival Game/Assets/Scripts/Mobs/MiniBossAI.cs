@@ -35,6 +35,15 @@ public class MiniBossAI : MonoBehaviour
     /// target has been assigned, allowing the boss to track the player.
     void Start()
     {
+        if (playerTarget == null)
+        {
+            GameObject playerObj = GameObject.FindWithTag("Player");
+            if (playerObj != null)
+            {
+                playerTarget = playerObj.transform;
+            }
+        }
+
         agent = GetComponent<NavMeshAgent>();
 
         if (agent != null) {
@@ -54,6 +63,14 @@ public class MiniBossAI : MonoBehaviour
     /// within detection range, and attacks when close enough.
     void Update()
     {
+        if (playerTarget != null && agent != null && agent.isOnNavMesh)
+        {
+            float distance = Vector3.Distance(transform.position, playerTarget.position);
+            if (distance <= detectionRange)
+            {
+                agent.SetDestination(playerTarget.position);
+            }
+        }
         if (playerTarget == null) { return; }
 
         float distanceToPlayer = Vector3.Distance(transform.position, playerTarget.position);
