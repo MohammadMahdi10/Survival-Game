@@ -77,14 +77,6 @@ public class MiniBossAI : MonoBehaviour
     /// within detection range, and attacks when close enough.
     void Update()
     {
-        if (playerTarget != null && agent != null && agent.isOnNavMesh)
-        {
-            float distance = Vector3.Distance(transform.position, playerTarget.position);
-            if (distance <= detectionRange)
-            {
-                agent.SetDestination(playerTarget.position);
-            }
-        }
         if (playerTarget == null) { return; }
 
         float distanceToPlayer = Vector3.Distance(transform.position, playerTarget.position);
@@ -104,15 +96,11 @@ public class MiniBossAI : MonoBehaviour
             {
                 agent.isStopped = false;
 
-                bool pathRequested = agent.SetDestination(playerTarget.position);
-
-                Debug.Log(
-                    "BOSS POSITION CHECK: " +
-                    "Transform=" + transform.position +
-                    " | Agent=" + agent.nextPosition +
-                    " | Distance=" + Vector3.Distance(transform.position, agent.nextPosition) +
-                    " | UpdatePosition=" + agent.updatePosition
-                );
+                if (!agent.hasPath ||
+                    Vector3.Distance(agent.destination, playerTarget.position) > 0.5f)
+                {
+                    agent.SetDestination(playerTarget.position);
+                }
             }
         }
         else
