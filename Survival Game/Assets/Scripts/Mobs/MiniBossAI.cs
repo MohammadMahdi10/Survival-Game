@@ -46,6 +46,15 @@ public class MiniBossAI : MonoBehaviour
 
         agent = GetComponent<NavMeshAgent>();
 
+        /// if the boss starts above or off the NavMesh, make it drop to the nearest navigable point
+        if (agent != null && !agent.isOnNavMesh &&
+            NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 20f, NavMesh.AllAreas))
+        {
+            agent.enabled = false;
+            transform.position = hit.position;
+            agent.enabled = true;
+        }
+
         if (agent != null) {
             agent.stoppingDistance = attackRange;
         }

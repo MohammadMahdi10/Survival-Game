@@ -15845,7 +15845,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3298051020709648103, guid: 3fe166775ffbedd46bdb0c8cb5941b68, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 2.11
+      value: 2.2
       objectReference: {fileID: 0}
     - target: {fileID: 3298051020709648103, guid: 3fe166775ffbedd46bdb0c8cb5941b68, type: 3}
       propertyPath: m_LocalPosition.z
@@ -15885,7 +15885,7 @@ PrefabInstance:
       objectReference: {fileID: 1304997871}
     - target: {fileID: 4826486723624872161, guid: 3fe166775ffbedd46bdb0c8cb5941b68, type: 3}
       propertyPath: detectionRange
-      value: 100
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 4826486723624872161, guid: 3fe166775ffbedd46bdb0c8cb5941b68, type: 3}
       propertyPath: worldDifficultyManager
