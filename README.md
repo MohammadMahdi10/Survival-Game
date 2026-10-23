@@ -63,7 +63,7 @@ The quest tracker displays the current objective and updates as the player progr
 
 The intended full game gives the player approximately 10 in game days to complete the main objective.
 
-For the prototype, the deadline has been shortened to Day 2 to make the hardcore mechanics easier to demonstrate and test.
+For the prototype, the deadline has been shortened to Day 5 to make the hardcore mechanics easier to demonstrate and test.
 
 If the player has not repaired the spaceship before hardcore mode activates, the game becomes more difficult and the player loses the ability to respawn after death.
 
