@@ -107,11 +107,11 @@ public class MiniBossAI : MonoBehaviour
                 bool pathRequested = agent.SetDestination(playerTarget.position);
 
                 Debug.Log(
-                    "BOSS PATH CHECK: " +
-                    "Requested=" + pathRequested +
-                    " | Status=" + agent.pathStatus +
-                    " | HasPath=" + agent.hasPath +
-                    " | Velocity=" + agent.velocity.magnitude
+                    "BOSS POSITION CHECK: " +
+                    "Transform=" + transform.position +
+                    " | Agent=" + agent.nextPosition +
+                    " | Distance=" + Vector3.Distance(transform.position, agent.nextPosition) +
+                    " | UpdatePosition=" + agent.updatePosition
                 );
             }
         }
