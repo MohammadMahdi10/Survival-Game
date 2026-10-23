@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.096754305, g: 0.35154676, b: 0.7148684, a: 1}
+  m_IndirectSpecularColor: {r: 0.09751191, g: 0.3512076, b: 0.7192557, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -15891,6 +15891,10 @@ PrefabInstance:
       propertyPath: worldDifficultyManager
       value: 
       objectReference: {fileID: 440980378}
+    - target: {fileID: 4863642366822489891, guid: 3fe166775ffbedd46bdb0c8cb5941b68, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6791722469181753011, guid: 3fe166775ffbedd46bdb0c8cb5941b68, type: 3}
       propertyPath: dropItem
       value: 6
