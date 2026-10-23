@@ -103,7 +103,16 @@ public class MiniBossAI : MonoBehaviour
             if (agent != null && agent.isActiveAndEnabled)
             {
                 agent.isStopped = false;
-                agent.SetDestination(playerTarget.position);
+
+                bool pathRequested = agent.SetDestination(playerTarget.position);
+
+                Debug.Log(
+                    "BOSS PATH CHECK: " +
+                    "Requested=" + pathRequested +
+                    " | Status=" + agent.pathStatus +
+                    " | HasPath=" + agent.hasPath +
+                    " | Velocity=" + agent.velocity.magnitude
+                );
             }
         }
         else
