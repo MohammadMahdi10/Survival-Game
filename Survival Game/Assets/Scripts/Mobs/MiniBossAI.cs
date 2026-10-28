@@ -1,13 +1,12 @@
+
 using System.Collections;
-using System.Collections.Generic;
-using System.Timers;
 using UnityEngine;
 using UnityEngine.AI;
 
-/// Controls the mini boss's movement, targeting and melee attacks.
-/// Uses direct movement instead of NavMesh to chase the player,
+/// Controls the mini-boss's movement, targeting and melee attacks.
+/// Uses NavMesh pathfinding to chase the player within detection range,
 /// and scales attack damage with the current world difficulty.
-[RequireComponent(typeof(CharacterController))]
+[RequireComponent(typeof(NavMeshAgent))]
 public class MiniBossAI : MonoBehaviour
 {
     [Header("Target Settings")]
@@ -18,8 +17,9 @@ public class MiniBossAI : MonoBehaviour
 
     [Header("Movement Settings")]
     public float moveSpeed = 3.5f;
-    public float gravity = -20f;
     public float rotationSpeed = 5f;
+    public float navMeshSampleRadius = 5f;
+    public float pathUpdateInterval = 0.5f;
 
     [Header("Combat Settings")]
     public float attackRange = 3.2f;
@@ -34,14 +34,23 @@ public class MiniBossAI : MonoBehaviour
     [Header("World Difficulty")]
     public WorldDifficultyManager worldDifficultyManager;
 
-    private CharacterController controller;
-    private float verticalVelocity;
+    private NavMeshAgent agent;
+    private NavMeshPath testPath;
+    private float nextPathUpdateTime = 0f;
+    private float nextDebugTime;
 
-    /// Initialises the CharacterController and finds the player if no
-    /// target has been assigned, allowing the boss to track the player.
+    /// Initialises NavMesh navigation and finds the player if no
+    /// target has been assigned in the Inspector.
     void Start()
     {
-        controller = GetComponent<CharacterController>();
+        agent = GetComponent<NavMeshAgent>();
+        testPath = new NavMeshPath();
+
+        agent.speed = moveSpeed;
+
+        // Navigation stops near the sampled destination.
+        // Combat distance is controlled separately by attackRange.
+        agent.stoppingDistance = 0.5f;
 
         if (playerTarget == null)
         {
@@ -52,16 +61,20 @@ public class MiniBossAI : MonoBehaviour
                 playerTarget = player.transform;
             }
         }
+
+        if (!agent.isOnNavMesh)
+        {
+            Debug.LogWarning("MiniBoss is not positioned on a NavMesh.");
+        }
     }
 
-    /// Checks the distance to the player each frame.
-    /// Stops chasing outside detection range, approaches the player
-    /// within detection range, and attacks when close enough.
+    /// Checks the player's distance every frame.
+    /// Chases only within detection range and attacks when close enough.
     void Update()
     {
-        if (playerTarget == null)
+        if (playerTarget == null || agent == null ||
+            !agent.isActiveAndEnabled || !agent.isOnNavMesh)
         {
-            ApplyMovement(Vector3.zero);
             return;
         }
 
@@ -70,30 +83,22 @@ public class MiniBossAI : MonoBehaviour
 
         float distanceToPlayer = direction.magnitude;
 
+        // Stop chasing if the player moves outside the detection radius.
+        // Clear the old path so the boss cannot follow across the map.
         if (distanceToPlayer > detectionRange)
         {
-            ApplyMovement(Vector3.zero);
+            StopChasing();
             return;
         }
 
         if (distanceToPlayer > attackRange)
         {
-            LookAtTarget();
-
-            // Only move as far as the attack range so the boss
-            // does not continuously push into the player.
-            float movementDistance = Mathf.Min(
-                moveSpeed * Time.deltaTime,
-                distanceToPlayer - attackRange
-            );
-
-            Vector3 movement = direction.normalized * movementDistance;
-
-            ApplyMovement(movement);
+            ChasePlayer();
         }
         else
         {
-            ApplyMovement(Vector3.zero);
+            // Pause movement during combat without deleting the existing path.
+            agent.isStopped = true;
 
             LookAtTarget();
 
@@ -105,33 +110,116 @@ public class MiniBossAI : MonoBehaviour
         }
     }
 
-    /// Applies horizontal movement and gravity together.
-    /// CharacterController handles collisions with terrain and obstacles
-    /// without requiring a NavMeshAgent.
-    void ApplyMovement(Vector3 horizontalMovement)
+    void LateUpdate()
     {
-        if (controller.isGrounded && verticalVelocity < 0f)
+        if (agent == null || !agent.isOnNavMesh || playerTarget == null)
+            return;
+
+        if (Time.time < nextDebugTime)
+            return;
+
+        nextDebugTime = Time.time + 1f;
+
+        Vector3 offset = playerTarget.position - transform.position;
+        offset.y = 0f;
+
+        Debug.Log(
+            "BOSS CHASE DEBUG: " +
+            "PlayerDistance=" + offset.magnitude.ToString("F2") +
+            " | Stopped=" + agent.isStopped +
+            " | HasPath=" + agent.hasPath +
+            " | Pending=" + agent.pathPending +
+            " | Path=" + agent.pathStatus +
+            " | Remaining=" + agent.remainingDistance.ToString("F2") +
+            " | Velocity=" + agent.velocity.magnitude.ToString("F2") +
+            " | PlayerPos=" + playerTarget.position.ToString("F2") +
+            " | Destination=" + agent.destination.ToString("F2") +
+            " | TargetToDestination=" +
+            Vector3.Distance(playerTarget.position, agent.destination).ToString("F2")
+        );
+    }
+
+    /// Finds a reachable NavMesh point near the player.
+    /// Updates the destination periodically to avoid repeated
+    /// path calculations interrupting the boss's movement.
+    void ChasePlayer()
+    {
+        agent.isStopped = false;
+
+        if (agent.pathPending || Time.time < nextPathUpdateTime)
+            return;
+
+        nextPathUpdateTime = Time.time + pathUpdateInterval;
+
+        Vector3 sampleOrigin = playerTarget.position;
+
+        if (Physics.Raycast(
+            playerTarget.position + Vector3.up * 2f,
+            Vector3.down,
+            out RaycastHit groundHit,
+            10f,
+            Physics.DefaultRaycastLayers,
+            QueryTriggerInteraction.Ignore))
         {
-            verticalVelocity = -2f;
+            sampleOrigin = groundHit.point;
         }
 
-        verticalVelocity += gravity * Time.deltaTime;
-
-        Vector3 movement = horizontalMovement;
-        movement.y = verticalVelocity * Time.deltaTime;
-
-        CollisionFlags collisions = controller.Move(movement);
-
-        if ((collisions & CollisionFlags.Below) != 0 &&
-            verticalVelocity < 0f)
+        if (!NavMesh.SamplePosition(
+            sampleOrigin,
+            out NavMeshHit hit,
+            navMeshSampleRadius,
+            agent.areaMask))
         {
-            verticalVelocity = -2f;
+            Debug.LogWarning("BOSS DESTINATION: Sampling failed");
+            return;
+        }
+
+        bool calculated = agent.CalculatePath(hit.position, testPath);
+
+        // Log the sampled destination separately from the current destination
+        // so we can see whether Unity is rejecting an updated target.
+        Debug.Log(
+            "BOSS DESTINATION: " +
+            "Player=" + playerTarget.position.ToString("F2") +
+            " | Sampled=" + hit.position.ToString("F2") +
+            " | SampleDistance=" +
+            Vector3.Distance(playerTarget.position, hit.position).ToString("F2") +
+            " | Calculated=" + calculated +
+            " | Status=" + testPath.status
+        );
+
+        if (calculated && testPath.status == NavMeshPathStatus.PathComplete)
+        {
+            if (!agent.hasPath ||
+                Vector3.Distance(agent.destination, hit.position) > 0.25f)
+            {
+                agent.SetDestination(hit.position);
+            }
+        }
+    }
+
+
+    /// Stops the boss when the player is outside detection range
+    /// or close enough for combat.
+    void StopChasing()
+    {
+        if (agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh)
+        {
+            return;
+        }
+
+        agent.isStopped = true;
+
+        // Remove the destination so the boss doesn't keep moving
+        // towards a player it can no longer detect.
+        if (agent.hasPath)
+        {
+            agent.ResetPath();
         }
     }
 
     /// Smoothly rotates the mini-boss to face the player.
-    /// Ignores vertical direction so the boss stays upright
-    /// rather than tilting towards the player's height.
+    /// Ignores vertical direction so the boss remains upright.
     void LookAtTarget()
     {
         Vector3 direction = playerTarget.position - transform.position;
@@ -150,8 +238,8 @@ public class MiniBossAI : MonoBehaviour
     }
 
     /// Animates the sword swing and checks whether the player is in range.
-    /// Uses a coroutine to spread the attack animation over multiple frames
-    /// instead of instantly changing the sword's rotation.
+    /// Uses a coroutine to spread the animation over multiple frames
+    /// rather than instantly changing the sword's rotation.
     IEnumerator SwingSwordRoutine()
     {
         isAttacking = true;
@@ -159,7 +247,8 @@ public class MiniBossAI : MonoBehaviour
         if (swordTransform != null)
         {
             Quaternion originalRotation = swordTransform.localRotation;
-            Quaternion attackRotation = originalRotation * Quaternion.Euler(-90f, 0f, 0f);
+            Quaternion attackRotation =
+                originalRotation * Quaternion.Euler(-90f, 0f, 0f);
 
             float duration = 0.5f;
             float elapsed = 0f;
@@ -179,7 +268,8 @@ public class MiniBossAI : MonoBehaviour
             // Check range when the swing reaches its target so the player
             // can avoid damage by moving away before the hit connects.
             if (playerTarget != null &&
-                Vector3.Distance(transform.position, playerTarget.position) <= attackRange + 0.5f)
+                Vector3.Distance(transform.position, playerTarget.position)
+                    <= attackRange + 0.5f)
             {
                 PlayerStats stats = playerTarget.GetComponent<PlayerStats>();
 
@@ -220,5 +310,28 @@ public class MiniBossAI : MonoBehaviour
 
         isAttacking = false;
     }
-}
 
+
+    void OnDrawGizmosSelected()
+    {
+        if (playerTarget == null)
+            return;
+
+        // Draw the player's position so we can compare it
+        // with the nearest navigable point in the Scene view.
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(playerTarget.position, 0.5f);
+
+        if (NavMesh.SamplePosition(
+            playerTarget.position,
+            out NavMeshHit hit,
+            5f,
+            NavMesh.AllAreas))
+        {
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireSphere(hit.position, 0.5f);
+            Gizmos.DrawLine(playerTarget.position, hit.position);
+        }
+    }
+
+}
