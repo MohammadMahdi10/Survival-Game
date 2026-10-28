@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.09751643, g: 0.3510231, b: 0.71831113, a: 1}
+  m_IndirectSpecularColor: {r: 0.09751191, g: 0.3512076, b: 0.7192557, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -15879,6 +15879,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4189825804973758331, guid: 3fe166775ffbedd46bdb0c8cb5941b68, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4826486723624872161, guid: 3fe166775ffbedd46bdb0c8cb5941b68, type: 3}
       propertyPath: playerTarget
       value: 
@@ -15893,7 +15897,7 @@ PrefabInstance:
       objectReference: {fileID: 440980378}
     - target: {fileID: 4863642366822489891, guid: 3fe166775ffbedd46bdb0c8cb5941b68, type: 3}
       propertyPath: m_Enabled
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6791722469181753011, guid: 3fe166775ffbedd46bdb0c8cb5941b68, type: 3}
       propertyPath: dropItem

@@ -4,17 +4,22 @@ using System.Timers;
 using UnityEngine;
 using UnityEngine.AI;
 
-/// Controls the mini-boss's movement, targeting and melee attacks.
-/// Uses NavMesh navigation to chase the player when detected,
+/// Controls the mini boss's movement, targeting and melee attacks.
+/// Uses direct movement instead of NavMesh to chase the player,
 /// and scales attack damage with the current world difficulty.
+[RequireComponent(typeof(CharacterController))]
 public class MiniBossAI : MonoBehaviour
 {
-
     [Header("Target Settings")]
     public Transform playerTarget;
 
     [Header("Detection Settings")]
     public float detectionRange = 15f;
+
+    [Header("Movement Settings")]
+    public float moveSpeed = 3.5f;
+    public float gravity = -20f;
+    public float rotationSpeed = 5f;
 
     [Header("Combat Settings")]
     public float attackRange = 3.2f;
@@ -29,44 +34,21 @@ public class MiniBossAI : MonoBehaviour
     [Header("World Difficulty")]
     public WorldDifficultyManager worldDifficultyManager;
 
-    private NavMeshAgent agent;
+    private CharacterController controller;
+    private float verticalVelocity;
 
-    /// Initialises the NavMesh agent and finds the player if no
+    /// Initialises the CharacterController and finds the player if no
     /// target has been assigned, allowing the boss to track the player.
     void Start()
     {
+        controller = GetComponent<CharacterController>();
+
         if (playerTarget == null)
         {
-            GameObject playerObj = GameObject.FindWithTag("Player");
-            if (playerObj != null)
-            {
-                playerTarget = playerObj.transform;
-            }
-        }
-
-        agent = GetComponent<NavMeshAgent>();
-
-        if (agent != null)
-        {
-            Debug.Log("BOSS NAVMESH CHECK: " + agent.isOnNavMesh);
-        }
-
-        /// if the boss starts above or off the NavMesh, make it drop to the nearest navigable point
-        if (agent != null && !agent.isOnNavMesh &&
-            NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 20f, NavMesh.AllAreas))
-        {
-            agent.enabled = false;
-            transform.position = hit.position;
-            agent.enabled = true;
-        }
-
-        if (agent != null) {
-            agent.stoppingDistance = attackRange;
-        }
-
-        if (playerTarget == null) {
             GameObject player = GameObject.FindGameObjectWithTag("Player");
-            if (player != null) {
+
+            if (player != null)
+            {
                 playerTarget = player.transform;
             }
         }
@@ -77,38 +59,41 @@ public class MiniBossAI : MonoBehaviour
     /// within detection range, and attacks when close enough.
     void Update()
     {
-        if (playerTarget == null) { return; }
-
-        float distanceToPlayer = Vector3.Distance(transform.position, playerTarget.position);
-
-        if (distanceToPlayer > detectionRange)
+        if (playerTarget == null)
         {
-            if (agent != null && agent.isActiveAndEnabled && !agent.isStopped)
-            {
-                agent.isStopped = true;
-            }
+            ApplyMovement(Vector3.zero);
             return;
         }
 
-        if(distanceToPlayer > attackRange)
-        {
-            if (agent != null && agent.isActiveAndEnabled)
-            {
-                agent.isStopped = false;
+        Vector3 direction = playerTarget.position - transform.position;
+        direction.y = 0f;
 
-                if (!agent.hasPath ||
-                    Vector3.Distance(agent.destination, playerTarget.position) > 0.5f)
-                {
-                    agent.SetDestination(playerTarget.position);
-                }
-            }
+        float distanceToPlayer = direction.magnitude;
+
+        if (distanceToPlayer > detectionRange)
+        {
+            ApplyMovement(Vector3.zero);
+            return;
+        }
+
+        if (distanceToPlayer > attackRange)
+        {
+            LookAtTarget();
+
+            // Only move as far as the attack range so the boss
+            // does not continuously push into the player.
+            float movementDistance = Mathf.Min(
+                moveSpeed * Time.deltaTime,
+                distanceToPlayer - attackRange
+            );
+
+            Vector3 movement = direction.normalized * movementDistance;
+
+            ApplyMovement(movement);
         }
         else
         {
-            if (agent != null && agent.isActiveAndEnabled)
-            {
-                agent.isStopped = true;
-            }
+            ApplyMovement(Vector3.zero);
 
             LookAtTarget();
 
@@ -120,23 +105,55 @@ public class MiniBossAI : MonoBehaviour
         }
     }
 
+    /// Applies horizontal movement and gravity together.
+    /// CharacterController handles collisions with terrain and obstacles
+    /// without requiring a NavMeshAgent.
+    void ApplyMovement(Vector3 horizontalMovement)
+    {
+        if (controller.isGrounded && verticalVelocity < 0f)
+        {
+            verticalVelocity = -2f;
+        }
+
+        verticalVelocity += gravity * Time.deltaTime;
+
+        Vector3 movement = horizontalMovement;
+        movement.y = verticalVelocity * Time.deltaTime;
+
+        CollisionFlags collisions = controller.Move(movement);
+
+        if ((collisions & CollisionFlags.Below) != 0 &&
+            verticalVelocity < 0f)
+        {
+            verticalVelocity = -2f;
+        }
+    }
+
     /// Smoothly rotates the mini-boss to face the player.
     /// Ignores vertical direction so the boss stays upright
     /// rather than tilting towards the player's height.
-    void LookAtTarget() { 
-        Vector3 direction = (playerTarget.position - transform.position).normalized;
-        direction.y = 0;
+    void LookAtTarget()
+    {
+        Vector3 direction = playerTarget.position - transform.position;
+        direction.y = 0f;
 
-        if (direction != Vector3.zero) {
+        if (direction.sqrMagnitude > 0.001f)
+        {
             Quaternion lookRotation = Quaternion.LookRotation(direction);
-            transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * 5f);
+
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                lookRotation,
+                Time.deltaTime * rotationSpeed
+            );
         }
     }
 
     /// Animates the sword swing and checks whether the player is in range.
     /// Uses a coroutine to spread the attack animation over multiple frames
     /// instead of instantly changing the sword's rotation.
-    IEnumerator SwingSwordRoutine() {
+    IEnumerator SwingSwordRoutine()
+    {
         isAttacking = true;
 
         if (swordTransform != null)
@@ -149,20 +166,28 @@ public class MiniBossAI : MonoBehaviour
 
             while (elapsed < duration)
             {
-                swordTransform.localRotation = Quaternion.Slerp(originalRotation, attackRotation, elapsed / duration);
+                swordTransform.localRotation = Quaternion.Slerp(
+                    originalRotation,
+                    attackRotation,
+                    elapsed / duration
+                );
+
                 elapsed += Time.deltaTime;
                 yield return null;
             }
 
             // Check range when the swing reaches its target so the player
             // can avoid damage by moving away before the hit connects.
-
-            if (playerTarget != null && Vector3.Distance(transform.position, playerTarget.position) <= attackRange + 0.5f)
+            if (playerTarget != null &&
+                Vector3.Distance(transform.position, playerTarget.position) <= attackRange + 0.5f)
             {
                 PlayerStats stats = playerTarget.GetComponent<PlayerStats>();
-                if (stats != null) {
-                    float difficulty = worldDifficultyManager != null ? worldDifficultyManager.worldDifficulty : 1f;
 
+                if (stats != null)
+                {
+                    float difficulty = worldDifficultyManager != null
+                        ? worldDifficultyManager.worldDifficulty
+                        : 1f;
 
                     // Scale boss damage with world difficulty to increase
                     // the challenge as the player progresses.
@@ -172,22 +197,28 @@ public class MiniBossAI : MonoBehaviour
                 }
             }
 
-
             // Brief pause before returning the sword to its starting position.
             yield return new WaitForSeconds(0.2f);
 
             elapsed = 0f;
+
             while (elapsed < duration)
             {
-                swordTransform.localRotation = Quaternion.Slerp(attackRotation, originalRotation, elapsed / duration);
+                swordTransform.localRotation = Quaternion.Slerp(
+                    attackRotation,
+                    originalRotation,
+                    elapsed / duration
+                );
+
                 elapsed += Time.deltaTime;
                 yield return null;
             }
 
-
             // Restore the exact starting rotation to avoid animation drift.
             swordTransform.localRotation = originalRotation;
         }
+
         isAttacking = false;
     }
 }
+
