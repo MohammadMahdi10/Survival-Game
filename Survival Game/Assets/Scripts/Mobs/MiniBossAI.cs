@@ -96,10 +96,19 @@ public class MiniBossAI : MonoBehaviour
             {
                 agent.isStopped = false;
 
-                if (!agent.hasPath ||
-                    Vector3.Distance(agent.destination, playerTarget.position) > 0.5f)
+                Vector3 targetPosition = playerTarget.position;
+
+                if (NavMesh.SamplePosition(
+                    targetPosition,
+                    out NavMeshHit hit,
+                    5f,
+                    agent.areaMask))
                 {
-                    agent.SetDestination(playerTarget.position);
+                    if (!agent.hasPath ||
+                        Vector3.Distance(agent.destination, hit.position) > 0.5f)
+                    {
+                        agent.SetDestination(hit.position);
+                    }
                 }
             }
         }
