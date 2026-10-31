@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.18028352, g: 0.22571376, b: 0.30692244, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -153,7 +153,7 @@ MonoBehaviour:
   plainsTerrain: {fileID: 908026531}
   desertTerrain: {fileID: 1236794861}
   swampTerrain: {fileID: 920382403}
-  seed: 3243
+  seed: 98778888
   biomeTransitionWidth: 120
   kingdomRadius: 60
   kingdomBlendWidth: 100
@@ -185,7 +185,7 @@ GameObject:
   - component: {fileID: 908026531}
   - component: {fileID: 908026530}
   m_Layer: 0
-  m_Name: PlainsTerrain
+  m_Name: DesertTerrain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -278,7 +278,7 @@ GameObject:
   - component: {fileID: 920382403}
   - component: {fileID: 920382402}
   m_Layer: 0
-  m_Name: SwampTerrain
+  m_Name: SnowTerrain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -463,7 +463,7 @@ GameObject:
   - component: {fileID: 1236794861}
   - component: {fileID: 1236794860}
   m_Layer: 0
-  m_Name: DesertTerrain
+  m_Name: SwampTerrain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -650,7 +650,7 @@ GameObject:
   - component: {fileID: 1853085838}
   - component: {fileID: 1853085837}
   m_Layer: 0
-  m_Name: SnowTerrain
+  m_Name: PlainsTerrain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
