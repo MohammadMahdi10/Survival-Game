@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.09751191, g: 0.3512076, b: 0.7192557, a: 1}
+  m_IndirectSpecularColor: {r: 0.09675569, g: 0.35171568, b: 0.7160293, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -10831,6 +10831,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   questUI: {fileID: 861794625}
+  firstBossLocation: {fileID: 1482320155}
+  towerLocation: {fileID: 136375759}
+  finalBossLocation: {fileID: 1267146771}
+  spaceshipLocation: {fileID: 2055304700}
 --- !u!1001 &1185420709
 PrefabInstance:
   m_ObjectHideFlags: 0

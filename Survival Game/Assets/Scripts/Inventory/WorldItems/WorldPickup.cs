@@ -85,6 +85,23 @@ public class WorldPickup : MonoBehaviour
         var pickup = root.AddComponent<WorldPickup>();
         pickup.type = type;
         pickup.label = labelGo.transform;
+
+        /// Registers dynamically spawned quest items with the quest manager.
+        /// Allows the navigation system to follow the stone or repair component
+        /// whenever either item is dropped into the world.
+        if (type == ItemType.SpecialItem || type == ItemType.RepairComponent) {
+            QuestManager questManager = FindFirstObjectByType<QuestManager>();
+
+            if (questManager != null) {
+                if (type == ItemType.SpecialItem) {
+                    questManager.SetStoneLocation(pickup.transform);
+                }
+                else if (type == ItemType.RepairComponent) {
+                    questManager.SetComponentLocation(pickup.transform);
+                }
+            }
+        }
+
         return pickup;
     }
 

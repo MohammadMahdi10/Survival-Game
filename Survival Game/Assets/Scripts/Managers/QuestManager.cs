@@ -9,6 +9,14 @@ public class QuestManager : MonoBehaviour {
 
     [SerializeField] private QuestUI questUI;
 
+    [Header("Quest Locations")]
+    [SerializeField] private Transform firstBossLocation;
+    private Transform stoneLocation;
+    [SerializeField] private Transform towerLocation;
+    [SerializeField] private Transform finalBossLocation;
+    private Transform componentLocation;
+    [SerializeField] private Transform spaceshipLocation;
+
     /// Defines the possible stages of the main quest,
     /// from defeating the first boss to completing the game.
     public enum QuestStage {
@@ -28,6 +36,47 @@ public class QuestManager : MonoBehaviour {
     /// can check which objective the player is completing.
     public QuestStage GetCurrentStage() {
         return currentStage;
+    }
+
+    /// Registers both the  stone's and components location respectively when it drops from the boss.
+    /// Allows quest navigation to track dynamically spawned items
+    /// instead of relying on a predefined scene location.
+    public void SetStoneLocation(Transform stone) {
+        stoneLocation = stone;
+    }
+
+    public void SetComponentLocation(Transform component)
+    {
+        componentLocation = component;
+    }
+
+    /// Returns the destination of the player's current quest.
+    /// Uses the active quest stage to identify which location
+    /// the navigation system should guide the player towards.
+    public Transform GetCurrentQuestTarget() {
+        switch (currentStage) {
+            case QuestStage.DefeatBoss: {
+                    return firstBossLocation;
+                }
+            case QuestStage.CollectStone: {
+                    return stoneLocation;
+                }
+            case QuestStage.Tower: {
+                    return towerLocation;
+                }
+            case QuestStage.FinalBoss: {
+                    return finalBossLocation;
+                }
+            case QuestStage.CollectComponent: {
+                    return componentLocation;
+                }
+            case QuestStage.ReturnToSpaceship: {
+                    return spaceshipLocation;
+                }
+            default: {
+                    return null;
+                }
+        }
     }
 
     /// Refreshes the quest display after a stage changes,
