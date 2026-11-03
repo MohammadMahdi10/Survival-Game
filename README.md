@@ -505,7 +505,7 @@ The prototype should be assessed using the submitted version of the main branch.
 
 ---
 
-## 13. Team Members
+## 12. Team Members
 
 | Team Member | GitHub Username |
 |---|---|
