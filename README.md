@@ -505,15 +505,6 @@ The prototype should be assessed using the submitted version of the main branch.
 
 ---
 
-## 12. Known Issues
-
-- Enemy NavMesh movement works in the Unity Editor, but chasing behaviour is currently not functioning correctly in the WebGL build. The boss can still detect and face the player.
-- Some platform-specific rendering warnings may appear in the WebGL browser console.
-
-The prototype is intended to demonstrate the game's key systems and is not a final production release.
-
----
-
 ## 13. Team Members
 
 | Team Member | GitHub Username |
