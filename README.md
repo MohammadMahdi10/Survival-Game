@@ -302,6 +302,8 @@ These systems provide a complete beginning, progression and ending for the proto
 
 The Unity project is organised by asset type and script responsibility to make development and maintenance easier.
 
+**Note that this is subjected to change as development continues**
+
 ### Main Assets Structure
 
 ```text
