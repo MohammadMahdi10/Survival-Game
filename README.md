@@ -386,7 +386,7 @@ Assets/
 - Quest manager
 - World difficulty manager
 
-This structure keeps related functionality grouped together and helps different team members locate and modify scripts without unnecessarily affecting unrelated systems.
+This structure keeps related functionality grouped together and helps us locate and modify scripts without unnecessarily affecting unrelated systems.
 
 ---
 
@@ -438,8 +438,6 @@ https://mohammadmahdi10.github.io/Survival-Game/build/index.html
 
 The WebGL build allows the game to be tested without opening the Unity Editor.
 
-For the most complete demonstration of the current enemy AI behaviour, use the Unity Editor version while the browser-specific navigation issue is being investigated.
-
 ---
 
 ## 9. Prototyping Decisions and Technical Challenges
@@ -454,9 +452,9 @@ These included:
 - Connecting boss encounters to quest progression.
 - Managing survival attributes alongside changing difficulty modifiers.
 
-These features helped the team explore how the game's main mechanics interact and identify challenges associated with integrating systems developed by different team members.
+These features helped us explore how the game's main mechanics interact and identify challenges associated with integrating systems developed by different members.
 
-The prototype also demonstrates a complete objective based gameplay loop, allowing the team to evaluate how exploration, crafting, combat and progression work together.
+The prototype also demonstrates a complete objective based gameplay loop, allowing us to evaluate how exploration, crafting, combat and progression work together.
 
 ---
 
@@ -476,7 +474,7 @@ Features intended for future development include:
 - **Night-Time Threats:** Increased enemy activity and danger after dark.
 - **Environmental Detail:** More custom models, textures, structures and points of interest.
 
-These features were left out of the current prototype so the team could prioritise developing and testing the essential gameplay mechanics.
+These features were left out of the current prototype so we could prioritise developing and testing the essential gameplay mechanics.
 
 ---
 
@@ -484,7 +482,7 @@ These features were left out of the current prototype so the team could prioriti
 
 The project was developed collaboratively using Git and GitHub.
 
-The team used:
+We used:
 
 - Individual development branches
 - Commits throughout the prototyping process
@@ -493,7 +491,7 @@ The team used:
 - Shared testing and debugging
 - Regular communication to coordinate dependent features
 
-Different team members worked on different gameplay systems before combining their work into the main project.
+Different members of the team worked on different gameplay systems before combining their work into the main project.
 
 ### Repository
 
