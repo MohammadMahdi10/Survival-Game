@@ -34,7 +34,7 @@ The prototype focuses on demonstrating the game's main gameplay loop and technic
 - Day and night cycle
 - Quest progression
 - Progressive difficulty scaling
-- Time limited hardcore mode
+- Time limited mode
 - Spaceship repair and victory condition
 
 These features were selected because they form the foundation of the intended game and require multiple gameplay systems to work together.
@@ -63,9 +63,7 @@ The quest tracker displays the current objective and updates as the player progr
 
 The intended full game gives the player approximately 10 in game days to complete the main objective.
 
-For the prototype, the deadline has been shortened to Day 5 to make the hardcore mechanics easier to demonstrate and test.
-
-If the player has not repaired the spaceship before hardcore mode activates, the game becomes more difficult and the player loses the ability to respawn after death.
+If the player has not repaired the spaceship before timer, spaceship is unrepairable and they cannot escape the planet.
 
 ---
 
@@ -97,7 +95,6 @@ If the player has not repaired the spaceship before hardcore mode activates, the
 - Ground items can be collected through the ground inventory panel when the player is nearby.
 - Items must fit within the available inventory cells to be placed.
 - Some items can be rotated to fit into smaller spaces.
-- Hardcore mode prevents respawning after death.
 - Completing the spaceship repair objective activates the victory screen.
 
 ---
@@ -131,7 +128,7 @@ The survival system manages several player attributes:
 
 Stamina is consumed during activities such as sprinting and blocking.
 
-Saturation is continuously being reduced. To saturate, eating or drinking water increases it (for the prototype this has not been implemented). In hardcore mode, this will reduce faster.
+Saturation is continuously being reduced. To saturate, eating or drinking water increases it (for the prototype this has not been implemented).
 
 Health and other survival attributes are displayed through the player HUD, allowing the player to monitor their current condition.
 
@@ -239,8 +236,6 @@ It includes:
 - Tracking the current in-game day
 - A time display on the player HUD
 
-The day counter also supports the prototype's hardcore mode deadline.
-
 In the intended full game, additional mechanics such as increased enemy spawning at night are planned to make night time survival more challenging.
 
 ### H. Quest and Progression System
@@ -287,43 +282,17 @@ This allows the system to be expanded in future development as new equipment, pl
 
 The current world difficulty is displayed on the player's HUD.
 
-### J. Hardcore Mode
-
-**Key Scripts:** `DayNightManager.cs`, `PlayerStats.cs`, `InventoryToggle.cs`
-
-The prototype includes a time based hardcore mode.
-
-For testing purposes, hardcore mode activates on Day 5 if the player has not completed the main objective.
-
-When hardcore mode activates:
-
-- Maximum health and stamina are reduced.
-- Hunger and thirst become harder to manage.
-- Player weapon damage is reduced.
-- The player can no longer respawn after death.
-- A hardcore indicator appears on the HUD.
-
-The purpose of hardcore mode is to create additional tension and demonstrate the consequences of missing the game's intended deadline.
-
-### K. Player Death, Respawning and Victory
+### J. Player Death, Respawning and Victory
 
 **Key Scripts:** `PlayerStats.cs`, `QuestManager.cs`, `SpaceshipInteraction.cs`
 
 The prototype contains both a death condition and a victory condition.
 
-**Normal Mode:**
-- When the player dies, a death screen appears.
-- The player can respawn and continue playing.
-
-**Hardcore Mode:**
-- Death remains permanent for the current attempt.
-- The respawn option is no longer available.
-
 **Victory:**
 - The player defeats the final boss.
 - The repair component is collected.
 - The player returns to the crashed spaceship.
-- Repairing the spaceship completes the main quest and displays the victory screen (for the final game, in hardcore more, the ship is irrepairable so the player can never escape).
+- Repairing the spaceship completes the main quest and displays the victory screen (for the final game, the ship is irreparable so the player can never escape).
 
 These systems provide a complete beginning, progression and ending for the prototype.
 
@@ -482,7 +451,6 @@ These included:
 - Implementing enemy navigation and elemental combat.
 - Connecting boss encounters to quest progression.
 - Managing survival attributes alongside changing difficulty modifiers.
-- Implementing hardcore mode and permanent death after a deadline.
 
 These features helped the team explore how the game's main mechanics interact and identify challenges associated with integrating systems developed by different team members.
 
