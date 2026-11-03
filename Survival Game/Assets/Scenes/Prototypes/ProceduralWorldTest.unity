@@ -153,11 +153,21 @@ MonoBehaviour:
   plainsTerrain: {fileID: 908026531}
   desertTerrain: {fileID: 1236794861}
   swampTerrain: {fileID: 920382403}
-  seed: 98778888
+  seed: 765857
   biomeTransitionWidth: 120
   kingdomRadius: 60
   kingdomBlendWidth: 100
   kingdomHeight: 8
+  snowLayer: {fileID: 8574412962073106934, guid: f1d8c365fe13df449adfd9518dea570e, type: 2}
+  plainsLayer: {fileID: 8574412962073106934, guid: d0e67b01d4cd7f24c8e4441c95350531, type: 2}
+  desertLayer: {fileID: 8574412962073106934, guid: c48312d81c810664f90832aeaaf19915, type: 2}
+  swampLayer: {fileID: 8574412962073106934, guid: f541a88b43ef7304096ff668fc341eb0, type: 2}
+  biomeWarpScale: 0.018
+  biomeWarpStrength: 350
+  biomeDetailScale: 0.0045
+  biomeDetailStrength: 65
+  biomeWeightNoiseScale: 0.0035
+  biomeWeightNoiseStrength: 0.35
 --- !u!4 &391980135
 Transform:
   m_ObjectHideFlags: 0
@@ -185,7 +195,7 @@ GameObject:
   - component: {fileID: 908026531}
   - component: {fileID: 908026530}
   m_Layer: 0
-  m_Name: DesertTerrain
+  m_Name: SnowTerrain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -278,7 +288,7 @@ GameObject:
   - component: {fileID: 920382403}
   - component: {fileID: 920382402}
   m_Layer: 0
-  m_Name: SnowTerrain
+  m_Name: DesertTerrain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -463,7 +473,7 @@ GameObject:
   - component: {fileID: 1236794861}
   - component: {fileID: 1236794860}
   m_Layer: 0
-  m_Name: SwampTerrain
+  m_Name: PlainsTerrain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -650,7 +660,7 @@ GameObject:
   - component: {fileID: 1853085838}
   - component: {fileID: 1853085837}
   m_Layer: 0
-  m_Name: PlainsTerrain
+  m_Name: SwampTerrain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

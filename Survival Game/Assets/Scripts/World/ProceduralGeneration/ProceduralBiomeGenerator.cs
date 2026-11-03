@@ -18,6 +18,20 @@ public class ProceduralWorldGenerator : MonoBehaviour {
     public float kingdomBlendWidth = 100f;
     public float kingdomHeight = 8f;
 
+    [Header("Biome Terrain Layers")]
+    public TerrainLayer snowLayer;
+    public TerrainLayer plainsLayer;
+    public TerrainLayer desertLayer;
+    public TerrainLayer swampLayer;
+
+    [Header("Biome Boundary Generation")]
+    public float biomeWarpScale = 0.0018f;
+    public float biomeWarpStrength = 350f;
+    public float biomeDetailScale = 0.0045f;
+    public float biomeDetailStrength = 65f;
+    [SerializeField] private float biomeWeightNoiseScale = 0.0035f;
+    [SerializeField] private float biomeWeightNoiseStrength = 0.35f;
+
     private enum Biome {
         Snow,
         Plains,
@@ -45,6 +59,7 @@ public class ProceduralWorldGenerator : MonoBehaviour {
     };
 
     private const int NoiseOffsetRange = 1000;
+    private const float BiomeWarpFrequency = 0.003f;
 
     private const float SnowLowlandBase = 18f;
     private const float SnowLowlandNoiseHeight = 30f;
@@ -52,8 +67,8 @@ public class ProceduralWorldGenerator : MonoBehaviour {
     private const float SnowDetailAmplitude = 45f;
     private const float SnowDetailFullStrengthHeight = 250f;
 
-    private const float PeakBlendSharpness = 40f;  
-    private const float PeakBodyPower = 1.5f;       
+    private const float PeakBlendSharpness = 40f;
+    private const float PeakBodyPower = 1.5f;
     private const float PeakWarpFrequency = 0.0025f;
     private const float PeakWarpStrength = 120f;
     private const float PeakMinRadiusScale = 0.75f;
@@ -68,6 +83,80 @@ public class ProceduralWorldGenerator : MonoBehaviour {
     private const float RidgeMaxScale = 1.3f;
 
     private const float MountainBorderFadeWidth = 150f;
+
+    private const float PlainsLargeFrequency = 0.0012f;
+    private const float PlainsMediumFrequency = 0.0035f;
+    private const float PlainsSmallFrequency = 0.010f;
+    private const float PlainsBase = 12f;
+    private const float PlainsBaseVariation = 25f;
+    private const float PlainsRollingHillHeight = 22f;
+    private const float PlainsHillRegionFrequency = 0.0018f;
+    private const float PlainsHillRegionStart = 0.52f;
+    private const float PlainsHillRegionEnd = 0.75f;
+    private const float PlainsLargerHillFrequency = 0.0025f;
+    private const float PlainsLargerHillPower = 1.8f;
+    private const float PlainsLargerHillHeight = 55f;
+    private const float PlainsDetailAmplitude = 5f;
+    private const float PlainsWarpStrength = 80f;
+    private const float PlainsBorderFadeWidth = 200f;
+
+    private const float DesertLargeFrequency = 0.0007f;
+    private const float DesertBase = 15f;
+    private const float DesertBaseVariation = 60f;
+    private const float DesertMinHeight = 4f;
+    private const float DesertFloorSoftness = 8f;   
+    private const float DesertBorderFadeWidth = 260f;
+
+    private const float DesertHillFrequency = 0.0009f;
+    private const int DesertHillOctaves = 3;
+    private const float DesertHillGain = 0.5f;
+    private const float DesertHillLacunarity = 2.1f;
+    private const float DesertHillContrastLow = 0.2f; 
+    private const float DesertHillContrastHigh = 0.8f;
+    private const float DesertHillWarpStrength = 140f;
+    private const float DesertHillHeight = 100f;
+
+    private const float DesertBasinFrequency = 0.002f;
+    private const float DesertBasinStart = 0.55f;
+    private const float DesertBasinEnd = 0.95f;
+    private const float DesertBasinDepth = 22f;
+
+    private const float DuneRegionFrequency = 0.0008f;
+    private const float DuneRegionStart = 0.28f;
+    private const float DuneRegionEnd = 0.62f;
+    private const float DuneLargeFrequency = 0.0012f;
+    private const float DuneLargeHeight = 120f;
+    private const float DuneSmallFrequency = 0.0032f;
+    private const float DuneSmallHeight = 22f;
+    private const float DuneCrestFloor = 0.3f;       
+    private const float DuneSharpness = 1.2f;      
+    private const float DuneStretch = 0.35f;          
+    private const float DuneWarpStrength = 200f;      
+    private const float DuneWindAngleDegrees = 35f;
+
+    private static readonly Vector2 DuneWindDirection = new Vector2(Mathf.Cos(DuneWindAngleDegrees * Mathf.Deg2Rad), Mathf.Sin(DuneWindAngleDegrees * Mathf.Deg2Rad));
+
+    private const float SwampLargeFrequency = 0.0015f;
+    private const float SwampMediumFrequency = 0.006f;
+    private const float SwampDetailFrequency = 0.02f;
+    private const float SwampBase = 9f;
+    private const float SwampLargeHeight = 7f;
+    private const float SwampMediumHeight = 3f;
+    private const float SwampDepressionFrequency = 0.0035f;
+    private const float SwampDepressionStart = 0.42f;
+    private const float SwampDepressionEnd = 0.65f;
+    private const float SwampDepressionDepth = 7f;
+    private const float SwampRaisedGroundFrequency = 0.0045f;
+    private const float SwampRaisedGroundStart = 0.58f;
+    private const float SwampRaisedGroundEnd = 0.78f;
+    private const float SwampRaisedGroundHeight = 8f;
+    private const float SwampDetailAmplitude = 2f;
+    private const float SwampMinHeight = 2f;
+    private const float SwampWarpStrength = 60f;
+    private const float SwampCreekFrequency = 0.004f;
+    private const float SwampCreekInnerWidth = 0.01f; 
+    private const float SwampCreekOuterWidth = 0.06f;  
+    private const float SwampCreekDepth = 5f;
 
     private float noiseOffsetX;
     private float noiseOffsetZ;
@@ -107,8 +196,7 @@ public class ProceduralWorldGenerator : MonoBehaviour {
             Vector3 position = terrain.transform.position;
             Vector3 size = terrain.terrainData.size;
 
-            if (Mathf.Abs(position.y - baseY) > 0.01f || Vector3.Distance(size, tileSize) > 0.01f ||
-                terrain.terrainData.heightmapResolution != heightmapResolution) {
+            if (Mathf.Abs(position.y - baseY) > 0.01f || Vector3.Distance(size, tileSize) > 0.01f || terrain.terrainData.heightmapResolution != heightmapResolution) {
                 return;
             }
 
@@ -163,6 +251,7 @@ public class ProceduralWorldGenerator : MonoBehaviour {
         for (int i = 0; i < quadrantTerrains.Length; i++) {
             quadrantTerrains[i].gameObject.name = shuffled[i] + "Terrain";
         }
+
         int snowIndex = System.Array.IndexOf(shuffled, Biome.Snow);
 
         worldCentre = new Vector2(centreX, centreZ);
@@ -192,15 +281,48 @@ public class ProceduralWorldGenerator : MonoBehaviour {
 
                     float[] biomeHeights = { snow, plains, desert, swamp };
 
-                    float eastBlend = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(centreX - biomeTransitionWidth, centreX + biomeTransitionWidth, worldX));
-                    float northBlend = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(centreZ - biomeTransitionWidth, centreZ + biomeTransitionWidth, worldZ));
+                    float warpNoiseX = Mathf.PerlinNoise(worldX * biomeWarpScale + noiseOffsetX + 143f, worldZ * biomeWarpScale + noiseOffsetZ + 287f);
+
+                    float warpNoiseZ = Mathf.PerlinNoise(worldX * biomeWarpScale + noiseOffsetX + 619f, worldZ * biomeWarpScale + noiseOffsetZ + 911f);
+
+                    float warpedX = worldX + (warpNoiseX * 2f - 1f) * biomeWarpStrength;
+                    float warpedZ = worldZ + (warpNoiseZ * 2f - 1f) * biomeWarpStrength;
+
+                    float eastBlend = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(centreX - biomeTransitionWidth, centreX + biomeTransitionWidth, warpedX));
+
+                    float northBlend = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(centreZ - biomeTransitionWidth, centreZ + biomeTransitionWidth, warpedZ));
 
                     float nw = (1f - eastBlend) * northBlend;
                     float ne = eastBlend * northBlend;
                     float sw = (1f - eastBlend) * (1f - northBlend);
                     float se = eastBlend * (1f - northBlend);
 
-                    float height = biomeHeights[(int)shuffled[0]] * nw + biomeHeights[(int)shuffled[1]] * ne + biomeHeights[(int)shuffled[2]] * sw + biomeHeights[(int)shuffled[3]] * se;
+                    float nwNoise = Mathf.PerlinNoise(worldX * biomeWeightNoiseScale + noiseOffsetX + 41f, worldZ * biomeWeightNoiseScale + noiseOffsetZ + 73f);
+
+                    float neNoise = Mathf.PerlinNoise(worldX * biomeWeightNoiseScale + noiseOffsetX + 157f, worldZ * biomeWeightNoiseScale + noiseOffsetZ + 211f);
+
+                    float swNoise = Mathf.PerlinNoise(worldX * biomeWeightNoiseScale + noiseOffsetX + 307f, worldZ * biomeWeightNoiseScale + noiseOffsetZ + 419f);
+
+                    float seNoise = Mathf.PerlinNoise(
+                        worldX * biomeWeightNoiseScale + noiseOffsetX + 557f, worldZ * biomeWeightNoiseScale + noiseOffsetZ + 683f);
+
+                    nw *= Mathf.Lerp(1f - biomeWeightNoiseStrength, 1f + biomeWeightNoiseStrength, nwNoise);
+                    ne *= Mathf.Lerp(1f - biomeWeightNoiseStrength, 1f + biomeWeightNoiseStrength, neNoise);
+                    sw *= Mathf.Lerp(1f - biomeWeightNoiseStrength, 1f + biomeWeightNoiseStrength, swNoise);
+                    se *= Mathf.Lerp(1f - biomeWeightNoiseStrength, 1f + biomeWeightNoiseStrength, seNoise);
+
+                    float total = nw + ne + sw + se;
+
+                    nw /= total;
+                    ne /= total;
+                    sw /= total;
+                    se /= total;
+
+                    float height =
+                        biomeHeights[(int)shuffled[0]] * nw +
+                        biomeHeights[(int)shuffled[1]] * ne +
+                        biomeHeights[(int)shuffled[2]] * sw +
+                        biomeHeights[(int)shuffled[3]] * se;
 
                     float distance = Vector2.Distance(new Vector2(worldX, worldZ), new Vector2(centreX, centreZ));
 
@@ -213,7 +335,70 @@ public class ProceduralWorldGenerator : MonoBehaviour {
             }
 
             data.SetHeights(0, 0, heights);
+            PaintBiomeTextures(terrain, shuffled, centreX, centreZ);
         }
+    }
+
+
+    private void GetBiomeWeights(float x, float z, float centreX, float centreZ, out float nw, out float ne, out float sw, out float se) {
+        float warpX = (SampleNoise(x, z, biomeWarpScale, 143f, 287f) - 0.5f) * 2f * biomeWarpStrength;
+        float warpZ = (SampleNoise(x, z, biomeWarpScale, 619f, 911f) - 0.5f) * 2f * biomeWarpStrength;
+
+        float detailX = (SampleNoise(x, z, biomeDetailScale, 317f, 493f) - 0.5f) * 2f * biomeDetailStrength;
+        float detailZ = (SampleNoise(x, z, biomeDetailScale, 757f, 893f) - 0.5f) * 2f * biomeDetailStrength;
+
+        float distance = Vector2.Distance(new Vector2(x, z), new Vector2(centreX, centreZ));
+        float centreFade = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(60f, 250f, distance));
+
+        float warpedX = x + (warpX + detailX) * centreFade;
+        float warpedZ = z + (warpZ + detailZ) * centreFade;
+
+        float eastBlend = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(centreX - biomeTransitionWidth, centreX + biomeTransitionWidth, warpedX));
+        float northBlend = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(centreZ - biomeTransitionWidth, centreZ + biomeTransitionWidth, warpedZ));
+
+        nw = (1f - eastBlend) * northBlend;
+        ne = eastBlend * northBlend;
+        sw = (1f - eastBlend) * (1f - northBlend);
+        se = eastBlend * (1f - northBlend);
+    }
+
+
+    private void PaintBiomeTextures(Terrain terrain, Biome[] shuffled, float centreX, float centreZ) {
+        TerrainData data = terrain.terrainData;
+
+        data.terrainLayers = new TerrainLayer[] { snowLayer, plainsLayer, desertLayer, swampLayer };
+
+        int width = data.alphamapWidth;
+        int height = data.alphamapHeight;
+
+        float[,,] splatmap = new float[height, width, 4];
+
+        Vector3 origin = terrain.transform.position;
+        Vector3 size = data.size;
+
+        for (int z = 0; z < height; z++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                float worldX = origin.x + x / (float)(width - 1) * size.x;
+                float worldZ = origin.z + z / (float)(height - 1) * size.z;
+
+                float eastBlend = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(centreX - biomeTransitionWidth, centreX + biomeTransitionWidth, worldX));
+                float northBlend = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(centreZ - biomeTransitionWidth, centreZ + biomeTransitionWidth, worldZ));
+
+                float nw = (1f - eastBlend) * northBlend;
+                float ne = eastBlend * northBlend;
+                float sw = (1f - eastBlend) * (1f - northBlend);
+                float se = eastBlend * (1f - northBlend);
+
+                splatmap[z, x, (int)shuffled[0]] += nw;
+                splatmap[z, x, (int)shuffled[1]] += ne;
+                splatmap[z, x, (int)shuffled[2]] += sw;
+                splatmap[z, x, (int)shuffled[3]] += se;
+            }
+        }
+
+        data.SetAlphamaps(0, 0, splatmap);
     }
 
 
@@ -223,81 +408,146 @@ public class ProceduralWorldGenerator : MonoBehaviour {
             case Biome.Snow:
                 return GetSnowHeight(x, z);
 
+            case Biome.Plains:
+                return GetPlainsHeight(x, z);
 
-            case Biome.Plains: {
-                    float largeNoise = SampleNoise(x, z, 0.0012f, 173f, 291f);
-                    float mediumNoise = SampleNoise(x, z, 0.0035f, 431f, 619f);
-                    float smallNoise = SampleNoise(x, z, 0.010f, 157f, 337f);
+            case Biome.Desert:
+                return GetDesertHeight(x, z);
 
-                    float baseTerrain = 12f + largeNoise * 25f;
-
-                    float rollingHills = Mathf.SmoothStep(0f, 1f, mediumNoise) * 22f;
-
-                    float hillRegionNoise = SampleNoise(x, z, 0.0018f, 761f, 123f);
-
-                    float hillMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.52f, 0.75f, hillRegionNoise));
-
-                    float largerHillNoise = SampleNoise(x, z, 0.0025f, 547f, 839f);
-
-                    float largerHills = Mathf.Pow(largerHillNoise, 1.8f) * 55f * hillMask;
-
-                    float gentleDetails = (smallNoise - 0.5f) * 5f;
-
-                    float valleys = (1f - hillMask) * rollingHills;
-
-                    return baseTerrain + valleys + largerHills + gentleDetails;
-                }
-
-
-            case Biome.Desert: {
-                    float largeNoise = SampleNoise(x, z, 0.0008f, 247f, 581f);
-                    float mediumNoise = SampleNoise(x, z, 0.0018f, 613f, 827f);
-                    float smallNoise = SampleNoise(x, z, 0.004f, 137f, 419f);
-
-                    float baseTerrain = 15f + largeNoise * 45f;
-
-                    float duneRegionNoise = SampleNoise(x, z, 0.001f, 379f, 941f);
-
-                    float duneMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.32f, 0.70f, duneRegionNoise));
-
-                    float largeDunes = Mathf.SmoothStep(0f, 1f, mediumNoise) * 140f;
-                    float smallerDunes = Mathf.SmoothStep(0f, 1f, smallNoise) * 12f;
-
-                    float rollingHills = largeNoise * 30f + mediumNoise * 18f;
-
-                    float valleys = (1f - duneMask) * rollingHills;
-                    float dunes = (largeDunes + smallerDunes) * duneMask;
-
-                    return baseTerrain + valleys + dunes;
-                }
-
-            case Biome.Swamp: {
-                    float largeNoise = SampleNoise(x, z, 0.0015f, 193f, 487f);
-                    float mediumNoise = SampleNoise(x, z, 0.006f, 557f, 821f);
-                    float detailNoise = SampleNoise(x, z, 0.02f, 311f, 671f);
-
-                    float lowlands = 9f + largeNoise * 7f + mediumNoise * 3f;
-
-                    float depressionNoise = SampleNoise(x, z, 0.0035f, 853f, 149f);
-
-                    float depressionMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.42f, 0.65f, depressionNoise));
-
-                    float depressions = depressionMask * 7f;
-
-                    float raisedGroundNoise = SampleNoise(x, z, 0.0045f, 467f, 739f);
-
-                    float raisedGroundMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.58f, 0.78f, raisedGroundNoise));
-
-                    float raisedGround = raisedGroundMask * 8f;
-
-                    float smallDetails = (detailNoise - 0.5f) * 2f;
-
-                    return Mathf.Max(2f, lowlands - depressions + raisedGround + smallDetails);
-                }
+            case Biome.Swamp:
+                return GetSwampHeight(x, z);
 
             default:
                 return 0f;
         }
+    }
+
+    private float GetPlainsHeight(float x, float z) {
+        Vector2 p = GetWarpedPosition(x, z, PlainsWarpStrength);
+
+        float largeNoise = SampleNoise(p.x, p.y, PlainsLargeFrequency, 173f, 291f);
+        float mediumNoise = SampleNoise(p.x, p.y, PlainsMediumFrequency, 431f, 619f);
+        float smallNoise = SampleNoise(p.x, p.y, PlainsSmallFrequency, 157f, 337f);
+
+        float baseTerrain = PlainsBase + largeNoise * PlainsBaseVariation;
+
+        float rollingHills = Mathf.SmoothStep(0f, 1f, mediumNoise) * PlainsRollingHillHeight;
+
+        float hillRegionNoise = SampleNoise(p.x, p.y, PlainsHillRegionFrequency, 761f, 123f);
+        float hillMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(PlainsHillRegionStart, PlainsHillRegionEnd, hillRegionNoise));
+
+        float borderFade = GetBiomeBorderFade(x, z, PlainsBorderFadeWidth);
+        float largerHillNoise = SampleNoise(p.x, p.y, PlainsLargerHillFrequency, 547f, 839f);
+        float largerHills = Mathf.Pow(largerHillNoise, PlainsLargerHillPower) * PlainsLargerHillHeight * hillMask * borderFade;
+
+        float gentleDetails = (smallNoise - 0.5f) * PlainsDetailAmplitude;
+
+        float valleys = (1f - hillMask) * rollingHills;
+
+        return baseTerrain + valleys + largerHills + gentleDetails;
+    }
+
+    private float GetDesertHeight(float x, float z) {
+        float largeNoise = SampleNoise(x, z, DesertLargeFrequency, 247f, 581f);
+        float baseTerrain = DesertBase + largeNoise * DesertBaseVariation;
+
+        float borderFade = GetBiomeBorderFade(x, z, DesertBorderFadeWidth);
+
+        float hills = GetDesertHills(x, z) * DesertHillHeight * borderFade;
+        float basins = GetDesertBasins(x, z) * DesertBasinDepth * borderFade;
+
+        float duneRegionNoise = SampleNoise(x, z, DuneRegionFrequency, 379f, 941f);
+        float duneMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(DuneRegionStart, DuneRegionEnd, duneRegionNoise));
+
+        float dunes = 0f;
+
+        if (duneMask > 0f) {
+            dunes = GetDuneHeight(x, z) * duneMask * borderFade;
+        }
+
+        return SmoothMax(DesertMinHeight, baseTerrain + hills - basins + dunes, DesertFloorSoftness);
+    }
+    private float GetDesertHills(float x, float z) {
+        Vector2 p = GetWarpedPosition(x, z, DesertHillWarpStrength);
+
+        float sum = 0f;
+        float totalAmplitude = 0f;
+        float amplitude = 1f;
+        float frequency = DesertHillFrequency;
+
+        for (int octave = 0; octave < DesertHillOctaves; octave++) {
+            sum += SampleNoise(p.x, p.y, frequency, 29f + octave * 173f, 47f + octave * 311f) * amplitude;
+            totalAmplitude += amplitude;
+
+            amplitude *= DesertHillGain;
+            frequency *= DesertHillLacunarity;
+        }
+
+        float hills = Mathf.InverseLerp(DesertHillContrastLow, DesertHillContrastHigh, sum / totalAmplitude);
+
+        return Mathf.SmoothStep(0f, 1f, hills);
+    }
+
+    private float GetDesertBasins(float x, float z) {
+        float basinNoise = SampleNoise(x, z, DesertBasinFrequency, 233f, 877f);
+
+        return Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(DesertBasinStart, DesertBasinEnd, basinNoise));
+    }
+
+
+    private float GetDuneHeight(float x, float z) {
+        float largeDunes = GetDuneLayer(x, z, DuneLargeFrequency, 613f, 827f) * DuneLargeHeight;
+        float smallerDunes = GetDuneLayer(x, z, DuneSmallFrequency, 137f, 419f) * DuneSmallHeight;
+
+        return largeDunes + smallerDunes;
+    }
+
+    private float GetDuneLayer(float x, float z, float frequency, float offsetA, float offsetB) {
+        Vector2 p = GetWarpedPosition(x, z, DuneWarpStrength);
+
+
+        float acrossWind = p.x * DuneWindDirection.x + p.y * DuneWindDirection.y;
+        float alongCrest = -p.x * DuneWindDirection.y + p.y * DuneWindDirection.x;
+
+        float noise = Mathf.PerlinNoise(
+            acrossWind * frequency + noiseOffsetX + offsetA,
+            alongCrest * frequency * DuneStretch + noiseOffsetZ + offsetB);
+
+        float crest = 1f - Mathf.Abs(noise * 2f - 1f);
+        crest = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(DuneCrestFloor, 1f, crest));
+
+        return Mathf.Pow(crest, DuneSharpness);
+    }
+
+    private float GetSwampHeight(float x, float z) {
+        Vector2 p = GetWarpedPosition(x, z, SwampWarpStrength);
+
+        float largeNoise = SampleNoise(p.x, p.y, SwampLargeFrequency, 193f, 487f);
+        float mediumNoise = SampleNoise(p.x, p.y, SwampMediumFrequency, 557f, 821f);
+        float detailNoise = SampleNoise(p.x, p.y, SwampDetailFrequency, 311f, 671f);
+
+        float lowlands = SwampBase + largeNoise * SwampLargeHeight + mediumNoise * SwampMediumHeight;
+
+        float depressionNoise = SampleNoise(p.x, p.y, SwampDepressionFrequency, 853f, 149f);
+        float depressionMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(SwampDepressionStart, SwampDepressionEnd, depressionNoise));
+        float depressions = depressionMask * SwampDepressionDepth;
+
+        float raisedGroundNoise = SampleNoise(p.x, p.y, SwampRaisedGroundFrequency, 467f, 739f);
+        float raisedGroundMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(SwampRaisedGroundStart, SwampRaisedGroundEnd, raisedGroundNoise));
+        float raisedGround = raisedGroundMask * SwampRaisedGroundHeight;
+
+        float smallDetails = (detailNoise - 0.5f) * SwampDetailAmplitude;
+
+        float creeks = GetSwampCreekMask(p.x, p.y) * SwampCreekDepth;
+
+        return Mathf.Max(SwampMinHeight, lowlands - depressions + raisedGround + smallDetails - creeks);
+    }
+
+    private float GetSwampCreekMask(float x, float z) {
+        float creekNoise = SampleNoise(x, z, SwampCreekFrequency, 613f, 727f);
+        float distanceFromCentre = Mathf.Abs(creekNoise - 0.5f);
+
+        return 1f - Mathf.SmoothStep(SwampCreekInnerWidth, SwampCreekOuterWidth, distanceFromCentre);
     }
 
     private float GetSnowHeight(float x, float z) {
@@ -373,11 +623,7 @@ public class ProceduralWorldGenerator : MonoBehaviour {
     }
 
     private float GetBorderFade(float x, float z) {
-        float distanceToBorder = Mathf.Min(Mathf.Abs(x - worldCentre.x), Mathf.Abs(z - worldCentre.y));
-
-        float fade = Mathf.InverseLerp(biomeTransitionWidth, biomeTransitionWidth + MountainBorderFadeWidth, distanceToBorder);
-
-        return Mathf.SmoothStep(0f, 1f, fade);
+        return GetBiomeBorderFade(x, z, MountainBorderFadeWidth);
     }
 
 
@@ -389,7 +635,8 @@ public class ProceduralWorldGenerator : MonoBehaviour {
     private float GetMaxSnowHeight() {
         float tallestPeak = 0f;
 
-        foreach (MountainPeak peak in MountainPeaks) {
+        foreach (MountainPeak peak in MountainPeaks)
+        {
             tallestPeak = Mathf.Max(tallestPeak, peak.height);
         }
 
@@ -400,6 +647,22 @@ public class ProceduralWorldGenerator : MonoBehaviour {
 
     private float SampleNoise(float x, float z, float frequency, float offsetA, float offsetB) {
         return Mathf.PerlinNoise(x * frequency + noiseOffsetX + offsetA, z * frequency + noiseOffsetZ + offsetB);
+    }
+
+
+    private Vector2 GetWarpedPosition(float x, float z, float strength) {
+        float warpX = (SampleNoise(x, z, BiomeWarpFrequency, 151f, 263f) - 0.5f) * strength;
+        float warpZ = (SampleNoise(x, z, BiomeWarpFrequency, 487f, 599f) - 0.5f) * strength;
+
+        return new Vector2(x + warpX, z + warpZ);
+    }
+
+    private float GetBiomeBorderFade(float x, float z, float fadeWidth) {
+        float distanceToBorder = Mathf.Min(Mathf.Abs(x - worldCentre.x), Mathf.Abs(z - worldCentre.y));
+
+        float fade = Mathf.InverseLerp(biomeTransitionWidth, biomeTransitionWidth + fadeWidth, distanceToBorder);
+
+        return Mathf.SmoothStep(0f, 1f, fade);
     }
 
 
