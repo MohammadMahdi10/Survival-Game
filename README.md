@@ -442,7 +442,7 @@ The WebGL build allows the game to be tested without opening the Unity Editor.
 
 ## 9. Prototyping Decisions and Technical Challenges
 
-The group prioritised systems that are important to the core survival experience and present meaningful technical challenges. We also prioritised technically risky systems to ensure that the most challenging aspects of the game were tested early in development.
+We prioritised systems that are important to the core survival experience and present meaningful technical challenges. We also prioritised technically risky systems to ensure that the most challenging aspects of the game were tested early in development.
 
 These included:
 
