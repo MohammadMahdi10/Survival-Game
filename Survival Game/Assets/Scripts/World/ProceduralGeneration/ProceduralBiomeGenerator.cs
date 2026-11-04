@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ProceduralWorldGenerator : MonoBehaviour {
+public class ProceduralBiomeGenerator : MonoBehaviour {
     [Header("Four Terrain Tiles")]
     public Terrain snowTerrain;
     public Terrain plainsTerrain;
@@ -11,7 +11,6 @@ public class ProceduralWorldGenerator : MonoBehaviour {
 
     [Header("World Settings")]
     public int seed = 12345;
-    public float biomeTransitionWidth = 120f;
 
     [Header("Kingdom Clearing")]
     public float kingdomRadius = 80f;
@@ -24,13 +23,12 @@ public class ProceduralWorldGenerator : MonoBehaviour {
     public TerrainLayer desertLayer;
     public TerrainLayer swampLayer;
 
-    [Header("Biome Boundary Generation")]
-    public float biomeWarpScale = 0.0018f;
-    public float biomeWarpStrength = 350f;
-    public float biomeDetailScale = 0.0045f;
-    public float biomeDetailStrength = 65f;
-    [SerializeField] private float biomeWeightNoiseScale = 0.0035f;
-    [SerializeField] private float biomeWeightNoiseStrength = 0.35f;
+    [Header("Radial Biome Generation")]
+    [Range(1f, 40f)] public float biomeAngleBlend = 12f;
+    [Range(0f, 45f)] public float biomeAngleWarp = 25f;
+    public float biomeAngleNoiseScale = 0.0018f;
+    [Range(0f, 20f)] public float biomeAngleDetail = 8f;
+    public float biomeAngleDetailScale = 0.005f;
 
     private enum Biome {
         Snow,
@@ -104,14 +102,14 @@ public class ProceduralWorldGenerator : MonoBehaviour {
     private const float DesertBase = 15f;
     private const float DesertBaseVariation = 60f;
     private const float DesertMinHeight = 4f;
-    private const float DesertFloorSoftness = 8f;   
+    private const float DesertFloorSoftness = 8f;
     private const float DesertBorderFadeWidth = 260f;
 
     private const float DesertHillFrequency = 0.0009f;
     private const int DesertHillOctaves = 3;
     private const float DesertHillGain = 0.5f;
     private const float DesertHillLacunarity = 2.1f;
-    private const float DesertHillContrastLow = 0.2f; 
+    private const float DesertHillContrastLow = 0.2f;
     private const float DesertHillContrastHigh = 0.8f;
     private const float DesertHillWarpStrength = 140f;
     private const float DesertHillHeight = 100f;
@@ -128,10 +126,10 @@ public class ProceduralWorldGenerator : MonoBehaviour {
     private const float DuneLargeHeight = 120f;
     private const float DuneSmallFrequency = 0.0032f;
     private const float DuneSmallHeight = 22f;
-    private const float DuneCrestFloor = 0.3f;       
-    private const float DuneSharpness = 1.2f;      
-    private const float DuneStretch = 0.35f;          
-    private const float DuneWarpStrength = 200f;      
+    private const float DuneCrestFloor = 0.3f;
+    private const float DuneSharpness = 1.2f;
+    private const float DuneStretch = 0.35f;
+    private const float DuneWarpStrength = 200f;
     private const float DuneWindAngleDegrees = 35f;
 
     private static readonly Vector2 DuneWindDirection = new Vector2(Mathf.Cos(DuneWindAngleDegrees * Mathf.Deg2Rad), Mathf.Sin(DuneWindAngleDegrees * Mathf.Deg2Rad));
@@ -154,8 +152,8 @@ public class ProceduralWorldGenerator : MonoBehaviour {
     private const float SwampMinHeight = 2f;
     private const float SwampWarpStrength = 60f;
     private const float SwampCreekFrequency = 0.004f;
-    private const float SwampCreekInnerWidth = 0.01f; 
-    private const float SwampCreekOuterWidth = 0.06f;  
+    private const float SwampCreekInnerWidth = 0.01f;
+    private const float SwampCreekOuterWidth = 0.06f;
     private const float SwampCreekDepth = 5f;
 
     private float noiseOffsetX;
@@ -164,8 +162,9 @@ public class ProceduralWorldGenerator : MonoBehaviour {
     private Vector2 snowDirection;
     private Vector3 tileExtent;
 
+    /// Generates matching terrain heights and biome textures across four tiles.
+    /// Shuffles the radial biome sectors using the seed and preserves the Kingdom clearing.
     [ContextMenu("Generate World")]
-
     public void GenerateWorld() {
         Terrain[] terrains = { snowTerrain, plainsTerrain, desertTerrain, swampTerrain };
 
@@ -248,17 +247,20 @@ public class ProceduralWorldGenerator : MonoBehaviour {
             }
         }
 
-        for (int i = 0; i < quadrantTerrains.Length; i++) {
-            quadrantTerrains[i].gameObject.name = shuffled[i] + "Terrain";
-        }
-
         int snowIndex = System.Array.IndexOf(shuffled, Biome.Snow);
 
         worldCentre = new Vector2(centreX, centreZ);
-        snowDirection = GetQuadrantDirection(snowIndex);
+        snowDirection = GetSectorDirection(snowIndex);
         tileExtent = tileSize;
 
+        if (snowLayer == null || plainsLayer == null || desertLayer == null || swampLayer == null) {
+            return;
+        }
+
         float maxSnowHeight = GetMaxSnowHeight();
+
+        if (maxSnowHeight > tileSize.y) {
+        }
 
         foreach (Terrain terrain in quadrantTerrains) {
             TerrainData data = terrain.terrainData;
@@ -281,48 +283,9 @@ public class ProceduralWorldGenerator : MonoBehaviour {
 
                     float[] biomeHeights = { snow, plains, desert, swamp };
 
-                    float warpNoiseX = Mathf.PerlinNoise(worldX * biomeWarpScale + noiseOffsetX + 143f, worldZ * biomeWarpScale + noiseOffsetZ + 287f);
+                    GetBiomeWeights(worldX, worldZ, centreX, centreZ, out float nw, out float ne, out float sw, out float se);
 
-                    float warpNoiseZ = Mathf.PerlinNoise(worldX * biomeWarpScale + noiseOffsetX + 619f, worldZ * biomeWarpScale + noiseOffsetZ + 911f);
-
-                    float warpedX = worldX + (warpNoiseX * 2f - 1f) * biomeWarpStrength;
-                    float warpedZ = worldZ + (warpNoiseZ * 2f - 1f) * biomeWarpStrength;
-
-                    float eastBlend = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(centreX - biomeTransitionWidth, centreX + biomeTransitionWidth, warpedX));
-
-                    float northBlend = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(centreZ - biomeTransitionWidth, centreZ + biomeTransitionWidth, warpedZ));
-
-                    float nw = (1f - eastBlend) * northBlend;
-                    float ne = eastBlend * northBlend;
-                    float sw = (1f - eastBlend) * (1f - northBlend);
-                    float se = eastBlend * (1f - northBlend);
-
-                    float nwNoise = Mathf.PerlinNoise(worldX * biomeWeightNoiseScale + noiseOffsetX + 41f, worldZ * biomeWeightNoiseScale + noiseOffsetZ + 73f);
-
-                    float neNoise = Mathf.PerlinNoise(worldX * biomeWeightNoiseScale + noiseOffsetX + 157f, worldZ * biomeWeightNoiseScale + noiseOffsetZ + 211f);
-
-                    float swNoise = Mathf.PerlinNoise(worldX * biomeWeightNoiseScale + noiseOffsetX + 307f, worldZ * biomeWeightNoiseScale + noiseOffsetZ + 419f);
-
-                    float seNoise = Mathf.PerlinNoise(
-                        worldX * biomeWeightNoiseScale + noiseOffsetX + 557f, worldZ * biomeWeightNoiseScale + noiseOffsetZ + 683f);
-
-                    nw *= Mathf.Lerp(1f - biomeWeightNoiseStrength, 1f + biomeWeightNoiseStrength, nwNoise);
-                    ne *= Mathf.Lerp(1f - biomeWeightNoiseStrength, 1f + biomeWeightNoiseStrength, neNoise);
-                    sw *= Mathf.Lerp(1f - biomeWeightNoiseStrength, 1f + biomeWeightNoiseStrength, swNoise);
-                    se *= Mathf.Lerp(1f - biomeWeightNoiseStrength, 1f + biomeWeightNoiseStrength, seNoise);
-
-                    float total = nw + ne + sw + se;
-
-                    nw /= total;
-                    ne /= total;
-                    sw /= total;
-                    se /= total;
-
-                    float height =
-                        biomeHeights[(int)shuffled[0]] * nw +
-                        biomeHeights[(int)shuffled[1]] * ne +
-                        biomeHeights[(int)shuffled[2]] * sw +
-                        biomeHeights[(int)shuffled[3]] * se;
+                    float height = biomeHeights[(int)shuffled[0]] * nw + biomeHeights[(int)shuffled[1]] * ne + biomeHeights[(int)shuffled[2]] * sw + biomeHeights[(int)shuffled[3]] * se;
 
                     float distance = Vector2.Distance(new Vector2(worldX, worldZ), new Vector2(centreX, centreZ));
 
@@ -340,29 +303,43 @@ public class ProceduralWorldGenerator : MonoBehaviour {
     }
 
 
+    /// Calculates biome weights using four pie shaped regions around the Kingdom.
+    /// Seeded noise bends their shared boundaries without creating square divisions.
+    /// The same weights are used for terrain heights and terrain textures.
     private void GetBiomeWeights(float x, float z, float centreX, float centreZ, out float nw, out float ne, out float sw, out float se) {
-        float warpX = (SampleNoise(x, z, biomeWarpScale, 143f, 287f) - 0.5f) * 2f * biomeWarpStrength;
-        float warpZ = (SampleNoise(x, z, biomeWarpScale, 619f, 911f) - 0.5f) * 2f * biomeWarpStrength;
+        float dx = x - centreX;
+        float dz = z - centreZ;
+        float distance = Mathf.Sqrt(dx * dx + dz * dz);
+        float angle = Mathf.Atan2(dz, dx) * Mathf.Rad2Deg;
 
-        float detailX = (SampleNoise(x, z, biomeDetailScale, 317f, 493f) - 0.5f) * 2f * biomeDetailStrength;
-        float detailZ = (SampleNoise(x, z, biomeDetailScale, 757f, 893f) - 0.5f) * 2f * biomeDetailStrength;
+        float warp = (SampleNoise(x, z, biomeAngleNoiseScale, 143f, 287f) - 0.5f) * 2f * biomeAngleWarp;
+        float detail = (SampleNoise(x, z, biomeAngleDetailScale, 619f, 911f) - 0.5f) * 2f * biomeAngleDetail;
+        float centreFade = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(kingdomRadius, kingdomRadius + kingdomBlendWidth + 100f, distance));
 
-        float distance = Vector2.Distance(new Vector2(x, z), new Vector2(centreX, centreZ));
-        float centreFade = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(60f, 250f, distance));
+        angle += (warp + detail) * centreFade;
 
-        float warpedX = x + (warpX + detailX) * centreFade;
-        float warpedZ = z + (warpZ + detailZ) * centreFade;
+        nw = GetSectorWeight(angle, 90f);
+        ne = GetSectorWeight(angle, 0f);
+        sw = GetSectorWeight(angle, 180f);
+        se = GetSectorWeight(angle, 270f);
 
-        float eastBlend = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(centreX - biomeTransitionWidth, centreX + biomeTransitionWidth, warpedX));
-        float northBlend = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(centreZ - biomeTransitionWidth, centreZ + biomeTransitionWidth, warpedZ));
+        float total = nw + ne + sw + se;
 
-        nw = (1f - eastBlend) * northBlend;
-        ne = eastBlend * northBlend;
-        sw = (1f - eastBlend) * (1f - northBlend);
-        se = eastBlend * (1f - northBlend);
+        nw /= total;
+        ne /= total;
+        sw /= total;
+        se /= total;
     }
 
+    /// Smoothly blends neighbouring radial sectors along their angular borders.
+    /// Each sector covers approximately one quarter of the world.
+    private float GetSectorWeight(float angle, float sectorAngle) {
+        float angularDistance = Mathf.Abs(Mathf.DeltaAngle(angle, sectorAngle));
+        return 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(45f - biomeAngleBlend, 45f + biomeAngleBlend, angularDistance));
+    }
 
+    /// Paints the terrain using the same radial weights as height generation.
+    /// Keeps biome textures aligned with the curved boundaries across all tiles.
     private void PaintBiomeTextures(Terrain terrain, Biome[] shuffled, float centreX, float centreZ) {
         TerrainData data = terrain.terrainData;
 
@@ -376,20 +353,12 @@ public class ProceduralWorldGenerator : MonoBehaviour {
         Vector3 origin = terrain.transform.position;
         Vector3 size = data.size;
 
-        for (int z = 0; z < height; z++)
-        {
-            for (int x = 0; x < width; x++)
-            {
+        for (int z = 0; z < height; z++) {
+            for (int x = 0; x < width; x++) {
                 float worldX = origin.x + x / (float)(width - 1) * size.x;
                 float worldZ = origin.z + z / (float)(height - 1) * size.z;
 
-                float eastBlend = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(centreX - biomeTransitionWidth, centreX + biomeTransitionWidth, worldX));
-                float northBlend = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(centreZ - biomeTransitionWidth, centreZ + biomeTransitionWidth, worldZ));
-
-                float nw = (1f - eastBlend) * northBlend;
-                float ne = eastBlend * northBlend;
-                float sw = (1f - eastBlend) * (1f - northBlend);
-                float se = eastBlend * (1f - northBlend);
+                GetBiomeWeights(worldX, worldZ, centreX, centreZ, out float nw, out float ne, out float sw, out float se);
 
                 splatmap[z, x, (int)shuffled[0]] += nw;
                 splatmap[z, x, (int)shuffled[1]] += ne;
@@ -400,8 +369,6 @@ public class ProceduralWorldGenerator : MonoBehaviour {
 
         data.SetAlphamaps(0, 0, splatmap);
     }
-
-
 
     private float GetBiomeHeight(Biome biome, float x, float z) {
         switch (biome) {
@@ -505,13 +472,10 @@ public class ProceduralWorldGenerator : MonoBehaviour {
     private float GetDuneLayer(float x, float z, float frequency, float offsetA, float offsetB) {
         Vector2 p = GetWarpedPosition(x, z, DuneWarpStrength);
 
-
         float acrossWind = p.x * DuneWindDirection.x + p.y * DuneWindDirection.y;
         float alongCrest = -p.x * DuneWindDirection.y + p.y * DuneWindDirection.x;
 
-        float noise = Mathf.PerlinNoise(
-            acrossWind * frequency + noiseOffsetX + offsetA,
-            alongCrest * frequency * DuneStretch + noiseOffsetZ + offsetB);
+        float noise = Mathf.PerlinNoise(acrossWind * frequency + noiseOffsetX + offsetA, alongCrest * frequency * DuneStretch + noiseOffsetZ + offsetB);
 
         float crest = 1f - Mathf.Abs(noise * 2f - 1f);
         crest = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(DuneCrestFloor, 1f, crest));
@@ -606,8 +570,8 @@ public class ProceduralWorldGenerator : MonoBehaviour {
         float amplitude = 1f;
         float frequency = RidgeBaseFrequency;
 
-        for (int octave = 0; octave < RidgeOctaves; octave++) {
-            float n = SampleNoise(x, z, frequency, octave * 137f, octave * 211f);
+        for (int i = 0; i < RidgeOctaves; i++) {
+            float n = SampleNoise(x, z, frequency, i * 137f, i * 211f);
 
             n = 1f - Mathf.Abs(n * 2f - 1f);
             n *= n;
@@ -628,15 +592,18 @@ public class ProceduralWorldGenerator : MonoBehaviour {
 
 
     private Vector2 GetPeakWorldPosition(MountainPeak peak) {
-        return new Vector2(worldCentre.x + snowDirection.x * peak.position.x * tileExtent.x, worldCentre.y + snowDirection.y * peak.position.y * tileExtent.z);
+        float lateral = (peak.position.x - 0.5f) * tileExtent.x * 1.5f;
+        float outward = peak.position.y * tileExtent.z;
+        Vector2 perpendicular = new Vector2(snowDirection.y, -snowDirection.x);
+
+        return worldCentre + snowDirection * outward + perpendicular * lateral;
     }
 
 
     private float GetMaxSnowHeight() {
         float tallestPeak = 0f;
 
-        foreach (MountainPeak peak in MountainPeaks)
-        {
+        foreach (MountainPeak peak in MountainPeaks) {
             tallestPeak = Mathf.Max(tallestPeak, peak.height);
         }
 
@@ -657,10 +624,11 @@ public class ProceduralWorldGenerator : MonoBehaviour {
         return new Vector2(x + warpX, z + warpZ);
     }
 
+    /// Reduces large hills and mountains close to the central Kingdom.
+    /// Radial fading avoids straight cuts along the old quadrant boundaries.
     private float GetBiomeBorderFade(float x, float z, float fadeWidth) {
-        float distanceToBorder = Mathf.Min(Mathf.Abs(x - worldCentre.x), Mathf.Abs(z - worldCentre.y));
-
-        float fade = Mathf.InverseLerp(biomeTransitionWidth, biomeTransitionWidth + fadeWidth, distanceToBorder);
+        float distance = Vector2.Distance(new Vector2(x, z), worldCentre);
+        float fade = Mathf.InverseLerp(kingdomRadius + kingdomBlendWidth, kingdomRadius + kingdomBlendWidth + fadeWidth, distance);
 
         return Mathf.SmoothStep(0f, 1f, fade);
     }
@@ -671,10 +639,22 @@ public class ProceduralWorldGenerator : MonoBehaviour {
         return Mathf.Lerp(a, b, h) + k * h * (1f - h);
     }
 
-    private static Vector2 GetQuadrantDirection(int quadrant) {
-        float xSign = (quadrant == 1 || quadrant == 3) ? 1f : -1f;
-        float zSign = (quadrant == 0 || quadrant == 1) ? 1f : -1f;
-
-        return new Vector2(xSign, zSign);
+    /// Returns the outward direction of the radial sector containing Snow.
+    /// Sector order matches the original shuffled biome indices.
+    private static Vector2 GetSectorDirection(int sector) {
+        switch (sector) {
+            case 0: { 
+                    return Vector2.up; 
+                }
+            case 1: { 
+                    return Vector2.right; 
+                }
+            case 2: { 
+                    return Vector2.left; 
+                }
+            default: { 
+                    return Vector2.down; 
+                }
+        }
     }
 }
