@@ -13,11 +13,11 @@ public class MiniBossAI : MonoBehaviour
     public string playerTag = "Player";
 
     [Header("Detection Settings")]
-    public float detectionRange = 15f;
+    public float detectionRange = 10f;
 
     [Header("Combat Settings")]
-    public float attackRange = 3.2f;
-    public float attackCooldown = 1f;
+    public float attackRange = 2.5f;
+    public float attackCooldown = 1.2f;
     public float attackDamage = 15f;
     private float nextAttackTime = 0f;
 
@@ -62,42 +62,71 @@ public class MiniBossAI : MonoBehaviour
     /// within detection range, and attacks when close enough.
     void Update()
     {
-        if (playerTarget == null) {
+        if (playerTarget == null)
+        {
             FindPlayerTarget();
-            if (playerTarget == null) {
+            if (playerTarget == null)
+            {
                 return; // No player found, exit early
             }
         }
 
-        float distanceToPlayer = Vector3.Distance(transform.position, playerTarget.position);
+        Vector3 bossPos = transform.position;
+        Vector3 playerPos = playerTarget.position;
+        bossPos.y = 0f; // Ignore vertical distance for detection
+        playerPos.y = 0f; // Ignore vertical distance for detection
 
-        if (distanceToPlayer > detectionRange)
+        float horizontalDistance = Vector3.Distance(bossPos, playerPos);
+
+        if (horizontalDistance > detectionRange)
         {
             StopAgent();
+            UpdateAnimator(false);
             return;
         }
 
-        if (distanceToPlayer > attackRange)
+        if (horizontalDistance > attackRange)
         {
             ChaseTarget();
+            UpdateAnimator(true);
         }
         else
         {
             StopAgent();
             LookAtTarget();
+            UpdateAnimator(false);
 
             if (Time.time >= nextAttackTime && !isAttacking)
             {
-                StartCoroutine(SwingSwordRoutine());
+                TriggerAttack();
                 nextAttackTime = Time.time + attackCooldown;
             }
         }
+    }
 
-        if (animator != null && agent != null)
+    private void UpdateAnimator(bool isRunning)
+    {
+        if (animator == null)
         {
-            bool running = agent.hasPath && agent.velocity.sqrMagnitude > 0.1f && !agent.isStopped;
-            animator.SetBool("IsRunning", running);
+            return;
         }
+        animator.SetBool("IsRunning", isRunning);
+
+        if (isRunning)
+        {
+            animator.ResetTrigger("Attack");
+        }
+    }
+
+    private void TriggerAttack()
+    {
+        isAttacking = true;
+        if (animator != null)
+        {
+            animator.SetTrigger("Attack");
+        }
+
+        StartCoroutine(ResetAttackFlag());
     }
 
     private void FindPlayerTarget()
@@ -110,6 +139,29 @@ public class MiniBossAI : MonoBehaviour
                 playerTarget = playerObject.transform;
             }
         }
+    }
+
+    public void HitPlayer()
+    {
+        if (playerTarget == null) return;
+
+        float distance = Vector3.Distance(transform.position, playerTarget.position);
+        if (distance <= attackRange + 1.0f)
+        {
+            PlayerStats stats = playerTarget.GetComponent<PlayerStats>();
+            if (stats != null)
+            {
+                float difficulty = worldDifficultyManager != null ? worldDifficultyManager.worldDifficulty : 1f;
+                float finalDamage = attackDamage * difficulty;
+                stats.TakeDamage(finalDamage);
+            }
+        }
+    }
+
+    private IEnumerator ResetAttackFlag()
+    {
+        yield return new WaitForSeconds(attackCooldown);
+        isAttacking = false;
     }
 
     private void SnapToNavMesh()
@@ -127,13 +179,13 @@ public class MiniBossAI : MonoBehaviour
 
     private void ChaseTarget()
     {
-        if (agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh) 
+        if (agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh)
         {
             return;
         }
         agent.isStopped = false;
 
-        if(Vector3.Distance(lastDestination, playerTarget.position) > 0.5f)
+        if (Vector3.Distance(lastDestination, playerTarget.position) > 0.5f)
         {
             if (NavMesh.SamplePosition(playerTarget.position, out NavMeshHit hit, 5f, agent.areaMask))
             {
@@ -156,16 +208,19 @@ public class MiniBossAI : MonoBehaviour
     /// Smoothly rotates the mini-boss to face the player.
     /// Ignores vertical direction so the boss stays upright
     /// rather than tilting towards the player's height.
-    private void LookAtTarget() { 
+    private void LookAtTarget()
+    {
 
-        if (playerTarget == null) {
+        if (playerTarget == null)
+        {
             return;
         }
 
         Vector3 direction = (playerTarget.position - transform.position).normalized;
         direction.y = 0;
 
-        if (direction != Vector3.zero) {
+        if (direction != Vector3.zero)
+        {
             Quaternion lookRotation = Quaternion.LookRotation(direction);
             transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * 5f);
         }
@@ -174,74 +229,64 @@ public class MiniBossAI : MonoBehaviour
     /// Animates the sword swing and checks whether the player is in range.
     /// Uses a coroutine to spread the attack animation over multiple frames
     /// instead of instantly changing the sword's rotation.
-    IEnumerator SwingSwordRoutine() {
-        isAttacking = true;
-        Quaternion originalRotation = swordTransform != null ? swordTransform.localRotation : Quaternion.identity;
+    //IEnumerator SwingSwordRoutine() {
+    //    isAttacking = true;
+    //    Quaternion originalRotation = swordTransform != null ? swordTransform.localRotation : Quaternion.identity;
 
-        if (animator != null)
-        {
-            animator.SetTrigger("Attack");
-            yield return new WaitForSeconds(0.4f); // Wait for the animation to start before swinging
-        }
+    //    if (animator != null)
+    //    {
+    //        animator.SetTrigger("Attack");
+    //        yield return new WaitForSeconds(0.4f); // Wait for the animation to start before swinging
+    //    }
 
-        else if (swordTransform != null)
-        {
-            originalRotation = swordTransform.localRotation;
-            Quaternion attackRotation = originalRotation * Quaternion.Euler(-90f, 0f, 0f);
+    //    else if (swordTransform != null)
+    //    {
+    //        originalRotation = swordTransform.localRotation;
+    //        Quaternion attackRotation = originalRotation * Quaternion.Euler(-90f, 0f, 0f);
 
-            float duration = 0.5f;
-            float elapsed = 0f;
+    //        float duration = 0.5f;
+    //        float elapsed = 0f;
 
-            while (elapsed < duration)
-            {
-                swordTransform.localRotation = Quaternion.Slerp(originalRotation, attackRotation, elapsed / duration);
-                elapsed += Time.deltaTime;
-                yield return null;
-            }
+    //        while (elapsed < duration)
+    //        {
+    //            swordTransform.localRotation = Quaternion.Slerp(originalRotation, attackRotation, elapsed / duration);
+    //            elapsed += Time.deltaTime;
+    //            yield return null;
+    //        }
 
-            yield return new WaitForSeconds(0.1f); // Small pause at the peak of the swingw
-        }
-        // Check range when the swing reaches its target so the player
-        // can avoid damage by moving away before the hit connects.
+    //        yield return new WaitForSeconds(0.1f); // Small pause at the peak of the swingw
+    //    }
+    //    // Check range when the swing reaches its target so the player
+    //    // can avoid damage by moving away before the hit connects.
 
-        if (playerTarget != null && Vector3.Distance(transform.position, playerTarget.position) <= attackRange + 0.8f)
-        {
-            PlayerStats stats = playerTarget.GetComponent<PlayerStats>();
-            if (stats != null) {
-                float difficulty = worldDifficultyManager != null ? worldDifficultyManager.worldDifficulty : 1f;
+    //    if (playerTarget != null && Vector3.Distance(transform.position, playerTarget.position) <= attackRange + 0.8f)
+    //    {
+    //        PlayerStats stats = playerTarget.GetComponent<PlayerStats>();
+    //        if (stats != null) {
+    //            float difficulty = worldDifficultyManager != null ? worldDifficultyManager.worldDifficulty : 1f;
 
 
-                // Scale boss damage with world difficulty to increase
-                // the challenge as the player progresses.
-                float finalDamage = attackDamage * difficulty;
+    //            // Scale boss damage with world difficulty to increase
+    //            // the challenge as the player progresses.
+    //            float finalDamage = attackDamage * difficulty;
 
-                stats.TakeDamage(finalDamage);
-            }
-        }
+    //            stats.TakeDamage(finalDamage);
+    //        }
+    //    }
 
-        if (animator == null && swordTransform != null)
-        {
-            Quaternion attackRotation = swordTransform.localRotation;
-            float duration = 0.35f;
-            float elapsed = 0f;
-            while (elapsed < duration)
-            {
-                swordTransform.localRotation = Quaternion.Slerp(attackRotation, originalRotation, elapsed / duration);
-                elapsed += Time.deltaTime;
-                yield return null;
-            }
-            swordTransform.localRotation = originalRotation;
-        }
-        isAttacking = false;
-    }
-
-    // Draws yellow (detection) and red (attack) range circles in Unity Editor
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, detectionRange);
-
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, attackRange);
-    }
+    //    if (animator == null && swordTransform != null)
+    //    {
+    //        Quaternion attackRotation = swordTransform.localRotation;
+    //        float duration = 0.35f;
+    //        float elapsed = 0f;
+    //        while (elapsed < duration)
+    //        {
+    //            swordTransform.localRotation = Quaternion.Slerp(attackRotation, originalRotation, elapsed / duration);
+    //            elapsed += Time.deltaTime;
+    //            yield return null;
+    //        }
+    //        swordTransform.localRotation = originalRotation;
+    //    }
+    //    isAttacking = false;
+    //}
 }
