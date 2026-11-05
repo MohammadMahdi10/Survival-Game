@@ -7,7 +7,7 @@ using UnityEngine;
 /// while allowing the surrounding terrain to remain visible.
 public class CircularWorldBoundary : MonoBehaviour {
     [Header("Boundary Settings")]
-    [SerializeField] private float radius = 1100f;
+    [SerializeField] private float radius = 1400f;
     [SerializeField] private float wallHeight = 4000f;
     [SerializeField] private float wallThickness = 10f;
     [SerializeField] private int segments = 128;

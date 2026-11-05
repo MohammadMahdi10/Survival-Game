@@ -14,6 +14,30 @@ public class TestPlayerMovement : MonoBehaviour {
 
     private CharacterController controller;
     private float verticalVelocity;
+    [SerializeField] private Transform playerCamera;
+    [SerializeField] private float mouseSensitivity = 2f;
+
+    private float cameraPitch;
+
+    /// Rotates the player horizontally and the camera vertically.
+    /// Locks the cursor and limits vertical rotation for
+    /// first-person movement during world boundary testing.
+    private void Start() {
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
+    private void LookAround() {
+        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
+        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
+
+        transform.Rotate(Vector3.up * mouseX);
+
+        cameraPitch -= mouseY;
+        cameraPitch = Mathf.Clamp(cameraPitch, -90f, 90f);
+
+        playerCamera.localRotation = Quaternion.Euler(cameraPitch, 0f, 0f);
+    }
 
     private void Awake() {
         controller = GetComponent<CharacterController>();
@@ -23,10 +47,17 @@ public class TestPlayerMovement : MonoBehaviour {
     /// Uses collision-aware movement so the circular boundary
     /// can prevent the player from leaving the playable area.
     private void Update() {
+        LookAround();
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
 
-        Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
+        Vector3 forward = Camera.main.transform.forward;
+        Vector3 right = Camera.main.transform.right;
+
+        forward.y = 0f;
+        right.y = 0f;
+
+        Vector3 direction = (forward.normalized * vertical + right.normalized * horizontal).normalized;
 
         if (controller.isGrounded && verticalVelocity < 0f) {
             verticalVelocity = -2f;

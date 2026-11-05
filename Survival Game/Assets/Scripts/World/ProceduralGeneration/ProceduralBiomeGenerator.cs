@@ -156,16 +156,29 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     private const float SwampCreekOuterWidth = 0.06f;
     private const float SwampCreekDepth = 5f;
 
+    private const float PlainsMountainRegionFrequency = 0.0008f;
+    private const float PlainsMountainShapeFrequency = 0.0015f;
+    private const float PlainsMountainDetailFrequency = 0.004f;
+    private const float PlainsMountainRegionStart = 0.58f;
+    private const float PlainsMountainRegionEnd = 0.78f;
+    private const float PlainsMountainHeight = 280f;
+    private const float PlainsMountainDetailHeight = 35f;
+
     private float noiseOffsetX;
     private float noiseOffsetZ;
     private Vector2 worldCentre;
     private Vector2 snowDirection;
     private Vector3 tileExtent;
 
+    private Biome[] sampledBiomes;
+    private float terrainBaseY;
+    private bool samplingReady;
+
     /// Generates matching terrain heights and biome textures across four tiles.
     /// Shuffles the radial biome sectors using the seed and preserves the Kingdom clearing.
     [ContextMenu("Generate World")]
     public void GenerateWorld() {
+        samplingReady = false;
         Terrain[] terrains = { snowTerrain, plainsTerrain, desertTerrain, swampTerrain };
 
         foreach (Terrain terrain in terrains) {
@@ -253,6 +266,10 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         snowDirection = GetSectorDirection(snowIndex);
         tileExtent = tileSize;
 
+        sampledBiomes = shuffled;
+        terrainBaseY = baseY;
+        samplingReady = true;
+
         if (snowLayer == null || plainsLayer == null || desertLayer == null || swampLayer == null) {
             return;
         }
@@ -302,6 +319,91 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         }
     }
 
+
+    /// Initialises terrain sampling using the existing world settings.
+    /// Reconstructs the biome order, noise offsets and world centre
+    /// so distant terrain can generate without regenerating the main tiles.
+    private bool InitializeWorldSampling() {
+        Terrain[] terrains = { snowTerrain, plainsTerrain, desertTerrain, swampTerrain };
+
+        float minX = float.PositiveInfinity;
+        float minZ = float.PositiveInfinity;
+        float maxX = float.NegativeInfinity;
+        float maxZ = float.NegativeInfinity;
+
+        foreach (Terrain terrain in terrains) {
+            if (terrain == null || terrain.terrainData == null) {
+                return false;
+            }
+
+            Vector3 position = terrain.transform.position;
+            Vector3 size = terrain.terrainData.size;
+
+            minX = Mathf.Min(minX, position.x);
+            minZ = Mathf.Min(minZ, position.z);
+            maxX = Mathf.Max(maxX, position.x + size.x);
+            maxZ = Mathf.Max(maxZ, position.z + size.z);
+        }
+
+        worldCentre = new Vector2((minX + maxX) * 0.5f, (minZ + maxZ) * 0.5f);
+        tileExtent = terrains[0].terrainData.size;
+        terrainBaseY = terrains[0].transform.position.y;
+
+        sampledBiomes = new Biome[] { Biome.Snow, Biome.Plains, Biome.Desert, Biome.Swamp };
+
+        System.Random random = new System.Random(seed);
+
+        for (int i = sampledBiomes.Length - 1; i > 0; i--) {
+            int j = random.Next(i + 1);
+
+            Biome temp = sampledBiomes[i];
+            sampledBiomes[i] = sampledBiomes[j];
+            sampledBiomes[j] = temp;
+        }
+
+        noiseOffsetX = random.Next(0, NoiseOffsetRange);
+        noiseOffsetZ = random.Next(0, NoiseOffsetRange);
+
+        int snowIndex = System.Array.IndexOf(sampledBiomes, Biome.Snow);
+        snowDirection = GetSectorDirection(snowIndex);
+
+        samplingReady = true;
+        return true;
+    }
+
+
+    /// Calculates the terrain's space height at any X and Z position.
+    /// Uses the same biome blending, terrain formulas and Kingdom clearing
+    /// as the main generator, including positions beyond the current tiles.
+    public float SampleWorldHeight(float x, float z) {
+        if (!samplingReady && !InitializeWorldSampling()) {
+            return float.NaN;
+        }
+
+        float[] biomeHeights = {
+            GetSnowHeight(x, z),
+            GetPlainsHeight(x, z),
+            GetDesertHeight(x, z),
+            GetSwampHeight(x, z)
+        };
+
+        GetBiomeWeights(x, z, worldCentre.x, worldCentre.y, out float nw, out float ne, out float sw, out float se);
+
+        float height = biomeHeights[(int)sampledBiomes[0]] * nw + biomeHeights[(int)sampledBiomes[1]] * ne + biomeHeights[(int)sampledBiomes[2]] * sw + biomeHeights[(int)sampledBiomes[3]] * se;
+
+        float distance = Vector2.Distance(new Vector2(x, z), worldCentre);
+        float kingdomBlend = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(kingdomRadius, kingdomRadius + kingdomBlendWidth, distance));
+
+        height = Mathf.Lerp(kingdomHeight, height, kingdomBlend);
+
+        return terrainBaseY + Mathf.Clamp(height, 0f, tileExtent.y);
+    }
+
+    /// Refreshes cached generation settings when Inspector values change.
+    /// Ensures future height samples use the current world configuration.
+    private void OnValidate() {
+        samplingReady = false;
+    }
 
     /// Calculates biome weights using four pie shaped regions around the Kingdom.
     /// Seeded noise bends their shared boundaries without creating square divisions.
@@ -411,7 +513,30 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
 
         float valleys = (1f - hillMask) * rollingHills;
 
-        return baseTerrain + valleys + largerHills + gentleDetails;
+        float mountains = GetPlainsMountainHeight(x, z);
+
+        return baseTerrain + valleys + largerHills + gentleDetails + mountains;
+    }
+
+    /// Generates occasional large mountains within the Plains biome.
+    /// Combines broad, smooth hills with smaller surface variations
+    /// while preserving open areas and the central Kingdom clearing.
+    private float GetPlainsMountainHeight(float x, float z) {
+        Vector2 p = GetWarpedPosition(x, z, PlainsWarpStrength);
+
+        float regionNoise = SampleNoise(p.x, p.y, PlainsMountainRegionFrequency, 317f, 593f);
+        float mountainMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(PlainsMountainRegionStart, PlainsMountainRegionEnd, regionNoise));
+
+        float shapeNoise = SampleNoise(p.x, p.y, PlainsMountainShapeFrequency, 719f, 283f);
+        float detailNoise = SampleNoise(p.x, p.y, PlainsMountainDetailFrequency, 431f, 877f);
+
+        float mountainShape = Mathf.SmoothStep(0f, 1f, shapeNoise);
+        float mountainHeight = mountainShape * PlainsMountainHeight;
+        float mountainDetails = (detailNoise - 0.5f) * PlainsMountainDetailHeight;
+
+        float borderFade = GetBiomeBorderFade(x, z, PlainsBorderFadeWidth);
+
+        return Mathf.Max(0f, mountainHeight + mountainDetails) * mountainMask * borderFade;
     }
 
     private float GetDesertHeight(float x, float z) {
@@ -528,6 +653,76 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         return lowlands + mountains + mountainDetail;
     }
 
+    /// Returns how strongly a location belongs to the Plains biome.
+    /// Allows distant terrain to generate large Plains mountains
+    /// while respecting the existing radial biome boundaries.
+    public float GetPlainsBiomeWeight(float x, float z) {
+        if (!samplingReady && !InitializeWorldSampling()) {
+            return 0f;
+        }
+
+        GetBiomeWeights(x, z, worldCentre.x, worldCentre.y, out float nw, out float ne, out float sw, out float se);
+
+        float[] weights = { nw, ne, sw, se };
+        int plainsIndex = System.Array.IndexOf(sampledBiomes, Biome.Plains);
+
+        return weights[plainsIndex];
+    }
+
+    /// Returns how strongly a location belongs to the Snow biome.
+    /// Allows distant mountains to follow the Snow region
+    /// and blend naturally near neighbouring biome boundaries.
+    public float GetSnowBiomeWeight(float x, float z) {
+        if (!samplingReady && !InitializeWorldSampling()) {
+            return 0f;
+        }
+
+        GetBiomeWeights(x, z, worldCentre.x, worldCentre.y, out float nw, out float ne, out float sw, out float se);
+
+        float[] weights = { nw, ne, sw, se };
+        int snowIndex = System.Array.IndexOf(sampledBiomes, Biome.Snow);
+
+        return weights[snowIndex];
+    }
+
+    /// Returns the contribution of each biome at a world position.
+    /// Uses the same radial boundaries and seed as the main terrain
+    /// so distant terrain textures follow the original biome transitions.
+    public void GetBiomeBlend(float x, float z, out float snow, out float plains, out float desert, out float swamp) {
+        snow = 0f;
+        plains = 0f;
+        desert = 0f;
+        swamp = 0f;
+
+        if (!samplingReady && !InitializeWorldSampling()) {
+            return;
+        }
+
+        GetBiomeWeights(x, z, worldCentre.x, worldCentre.y, out float nw, out float ne, out float sw, out float se);
+
+        float[] weights = { nw, ne, sw, se };
+
+        for (int i = 0; i < sampledBiomes.Length; i++) {
+            switch (sampledBiomes[i]) {
+                case Biome.Snow: {
+                        snow = weights[i];
+                        break;
+                    }
+                case Biome.Plains: {
+                        plains = weights[i];
+                        break;
+                    }
+                case Biome.Desert: {
+                        desert = weights[i];
+                        break;
+                    }
+                case Biome.Swamp: {
+                        swamp = weights[i];
+                        break;
+                    }
+            }
+        }
+    }
 
     private float GetMountainHeight(float x, float z) {
         float ridges = GetRidgedNoise(x, z);
