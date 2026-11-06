@@ -12,8 +12,8 @@ public class DistantTerrainGenerator : MonoBehaviour {
     [SerializeField] private Material distantTerrainMaterial;
 
     [Header("Distant Terrain Settings")]
-    [SerializeField] private int meshResolution = 64;
-    [SerializeField] private int textureResolution = 256;
+    [SerializeField] private int meshResolution = 128;
+    [SerializeField] private int textureResolution = 512;
 
     [Header("Outer Terrain Variation")]
     [SerializeField] private float variationBlendDistance = 600f;

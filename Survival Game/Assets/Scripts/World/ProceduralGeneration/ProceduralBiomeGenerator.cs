@@ -164,6 +164,14 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     private const float PlainsMountainHeight = 280f;
     private const float PlainsMountainDetailHeight = 35f;
 
+    [Header("Plains Boss Cliff")]
+    [SerializeField] private float plainsCliffRadius = 350f;
+    [SerializeField] private float plainsCliffEdgeWidth = 55f;
+    [SerializeField] private float plainsCliffHeight = 340f;
+    [SerializeField] private float plainsCliffTopVariation = 8f;
+
+    private Vector2 plainsCliffCentre;
+
     private float noiseOffsetX;
     private float noiseOffsetZ;
     private Vector2 worldCentre;
@@ -261,10 +269,13 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         }
 
         int snowIndex = System.Array.IndexOf(shuffled, Biome.Snow);
+        int plainsIndex = System.Array.IndexOf(shuffled, Biome.Plains);
 
         worldCentre = new Vector2(centreX, centreZ);
         snowDirection = GetSectorDirection(snowIndex);
         tileExtent = tileSize;
+
+        SetPlainsCliffPosition(plainsIndex);
 
         sampledBiomes = shuffled;
         terrainBaseY = baseY;
@@ -366,6 +377,9 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
 
         int snowIndex = System.Array.IndexOf(sampledBiomes, Biome.Snow);
         snowDirection = GetSectorDirection(snowIndex);
+
+        int plainsIndex = System.Array.IndexOf(sampledBiomes, Biome.Plains);
+        SetPlainsCliffPosition(plainsIndex);
 
         samplingReady = true;
         return true;
@@ -514,8 +528,9 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         float valleys = (1f - hillMask) * rollingHills;
 
         float mountains = GetPlainsMountainHeight(x, z);
+        float height = baseTerrain + valleys + largerHills + gentleDetails + mountains;
 
-        return baseTerrain + valleys + largerHills + gentleDetails + mountains;
+        return GetPlainsCliffHeight(x, z, height);
     }
 
     /// Generates occasional large mountains within the Plains biome.
@@ -559,6 +574,56 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
 
         return SmoothMax(DesertMinHeight, baseTerrain + hills - basins + dunes, DesertFloorSoftness);
     }
+
+    /// Positions the Plains mountain towards the outer edge of its biome.
+    /// Randomises its angle and distance using the world seed while
+    /// keeping the central Kingdom area clear for future structures.
+    private void SetPlainsCliffPosition(int plainsIndex) {
+        Vector2 direction = GetSectorDirection(plainsIndex);
+        Vector2 perpendicular = new Vector2(direction.y, -direction.x);
+
+        System.Random random = new System.Random(seed + 4729);
+
+        float distance = Mathf.Lerp(1500f, 1700f, (float)random.NextDouble());
+        float angle = Mathf.Lerp(-35f, 35f, (float)random.NextDouble()) * Mathf.Deg2Rad;
+
+        Vector2 rotatedDirection = direction * Mathf.Cos(angle) + perpendicular * Mathf.Sin(angle);
+
+        plainsCliffCentre = worldCentre + rotatedDirection * distance;
+    }
+
+
+    /// Generates a natural mountain with irregular cliffs
+    /// Blends the mountain into the surrounding Plains terrain while
+    /// preserving a mostly flat peak for a future boss battle.
+    private float GetPlainsCliffHeight(float x, float z, float originalHeight) {
+        float distance = Vector2.Distance(new Vector2(x, z), plainsCliffCentre);
+
+        float largeNoise = SampleNoise(x, z, 0.002f, 317f, 593f);
+        float mediumNoise = SampleNoise(x, z, 0.006f, 719f, 283f);
+        float detailNoise = SampleNoise(x, z, 0.015f, 431f, 877f);
+
+        float warpedDistance = distance + (largeNoise - 0.5f) * 140f + (mediumNoise - 0.5f) * 35f;
+
+        float summitRadius = plainsCliffRadius * 0.32f;
+        float mountainRadius = plainsCliffRadius + plainsCliffEdgeWidth;
+
+        float mountainMask = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(summitRadius, mountainRadius, warpedDistance));
+        mountainMask = Mathf.Pow(mountainMask, 0.85f);
+
+        float summitBlend = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(summitRadius * 0.65f, summitRadius * 1.5f, distance));
+
+        float ridges = (mediumNoise - 0.5f) * 70f + (detailNoise - 0.5f) * 25f;
+        float mountainHeight = originalHeight + Mathf.Max(0f, plainsCliffHeight - originalHeight) * mountainMask;
+
+        mountainHeight += ridges * mountainMask * (1f - summitBlend);
+
+        float summitVariation = (detailNoise - 0.5f) * 2f * plainsCliffTopVariation;
+        float summitHeight = plainsCliffHeight + summitVariation;
+
+        return Mathf.Lerp(mountainHeight, summitHeight, summitBlend);
+    }
+
     private float GetDesertHills(float x, float z) {
         Vector2 p = GetWarpedPosition(x, z, DesertHillWarpStrength);
 
