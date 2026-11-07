@@ -22,11 +22,11 @@ public class DistantTerrainGenerator : MonoBehaviour {
     [SerializeField] private float variationStrength = 60f;
 
     [Header("Distant Snow Mountains")]
-    [SerializeField] private float mountainScale = 0.0007f;
-    [SerializeField] private float mountainDetailScale = 0.002f;
-    [SerializeField] private float mountainHeight = 850f;
-    [SerializeField] private float mountainThreshold = 0.48f;
-    [SerializeField] private float mountainFullHeightThreshold = 0.78f;
+    [SerializeField] private float mountainScale = 0.00035f;
+    [SerializeField] private float mountainDetailScale = 0.0015f;
+    [SerializeField] private float mountainHeight = 2200f;
+    [SerializeField] private float mountainThreshold = 0.38f;
+    [SerializeField] private float mountainFullHeightThreshold = 0.68f;
 
     [Header("Distant Plains Mountains")]
     [SerializeField] private float plainsMountainHeight = 400f;
@@ -126,43 +126,94 @@ public class DistantTerrainGenerator : MonoBehaviour {
         return originalHeight + (variation + snowMountains + plainsMountains) * blend;
     }
 
-    /// Generates a texture for each distant terrain mesh.
-    /// Samples the original Terrain Layer textures using world coordinates
-    /// and blends them using the same biome weights as the main world.
-    private Texture2D GenerateBiomeTexture(float startX, float startZ, float width, float length) {
+
+    /// Bakes biome textures for the distant terrain meshes.
+    /// Exposes rock on steep Snow slopes, restores snow on high
+    /// summits, and adds narrow snow streaks across rocky faces.
+    private Texture2D GenerateBiomeTexture(float startX, float startZ, float width, float length, Mesh mesh) {
         Texture2D texture = new Texture2D(textureResolution, textureResolution, TextureFormat.RGBA32, true);
         texture.wrapMode = TextureWrapMode.Clamp;
 
-        TerrainLayer[] layers = {
-        biomeGenerator.snowLayer,
-        biomeGenerator.plainsLayer,
-        biomeGenerator.desertLayer,
-        biomeGenerator.swampLayer
-        };
+        TerrainLayer[] layers = { biomeGenerator.snowLayer, biomeGenerator.plainsLayer, biomeGenerator.desertLayer, biomeGenerator.swampLayer, biomeGenerator.rockLayer };
 
         Color[] pixels = new Color[textureResolution * textureResolution];
 
+        Vector3[] vertices = mesh.vertices;
+        Vector3[] normals = mesh.normals;
+
+        int vertexCount = meshResolution + 1;
+
         for (int z = 0; z < textureResolution; z++) {
             for (int x = 0; x < textureResolution; x++) {
-                float worldX = startX + x / (float)(textureResolution - 1) * width;
-                float worldZ = startZ + z / (float)(textureResolution - 1) * length;
+                float u = x / (float)(textureResolution - 1);
+                float v = z / (float)(textureResolution - 1);
+
+                float worldX = startX + u * width;
+                float worldZ = startZ + v * length;
 
                 biomeGenerator.GetBiomeBlend(worldX, worldZ, out float snow, out float plains, out float desert, out float swamp);
 
-                float[] weights = { snow, plains, desert, swamp };
+                float meshX = u * meshResolution;
+                float meshZ = v * meshResolution;
+
+                int ix = Mathf.Min(Mathf.FloorToInt(meshX), meshResolution - 1);
+                int iz = Mathf.Min(Mathf.FloorToInt(meshZ), meshResolution - 1);
+
+                float fx = meshX - ix;
+                float fz = meshZ - iz;
+
+                int a = iz * vertexCount + ix;
+                int b = a + 1;
+                int c = a + vertexCount;
+                int d = c + 1;
+
+                Vector3 normalBottom = Vector3.Lerp(normals[a], normals[b], fx);
+                Vector3 normalTop = Vector3.Lerp(normals[c], normals[d], fx);
+                Vector3 normal = Vector3.Lerp(normalBottom, normalTop, fz).normalized;
+
+                float slope = Vector3.Angle(normal, Vector3.up);
+
+                float heightBottom = Mathf.Lerp(vertices[a].y, vertices[b].y, fx);
+                float heightTop = Mathf.Lerp(vertices[c].y, vertices[d].y, fx);
+                float mountainHeight = Mathf.Lerp(heightBottom, heightTop, fz);
+
+                float rockMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(28f, 52f, slope));
+
+                float summitSnow = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(900f, 1750f, mountainHeight));
+
+                float warp = (Mathf.PerlinNoise(worldX * 0.003f + biomeGenerator.seed * 0.017f + 317f, worldZ * 0.003f + biomeGenerator.seed * 0.029f + 593f) - 0.5f) * 110f;
+
+                float streakNoise = Mathf.PerlinNoise((worldX + warp) * 0.017f + biomeGenerator.seed * 0.013f + 719f, worldZ * 0.00374f + biomeGenerator.seed * 0.031f + 283f);
+
+                float streaks = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.64f, 0.77f, streakNoise));
+
+                float slopeMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(25f, 45f, slope));
+
+                float elevationMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(350f, 850f, mountainHeight));
+
+                float streakMask = streaks * slopeMask * elevationMask;
+
+                float snowRestoration = Mathf.Max(summitSnow * 0.98f, streakMask * 0.85f);
+
+                float rock = snow * rockMask * (1f - snowRestoration);
+                snow -= rock;
+
+                float[] weights = { snow, plains, desert, swamp, rock };
+
                 Color colour = Color.black;
 
                 for (int i = 0; i < layers.Length; i++) {
-                    if (layers[i] == null || layers[i].diffuseTexture == null) {
+                    if (layers[i] == null || layers[i].diffuseTexture == null || weights[i] <= 0f) {
                         continue;
                     }
 
                     Texture2D diffuse = layers[i].diffuseTexture;
 
-                    float u = Mathf.Repeat((worldX + layers[i].tileOffset.x) / layers[i].tileSize.x, 1f);
-                    float v = Mathf.Repeat((worldZ + layers[i].tileOffset.y) / layers[i].tileSize.y, 1f);
+                    float textureU = Mathf.Repeat((worldX + layers[i].tileOffset.x) / layers[i].tileSize.x, 1f);
 
-                    colour += diffuse.GetPixelBilinear(u, v) * weights[i];
+                    float textureV = Mathf.Repeat((worldZ + layers[i].tileOffset.y) / layers[i].tileSize.y, 1f);
+
+                    colour += diffuse.GetPixelBilinear(textureU, textureV) * weights[i];
                 }
 
                 pixels[z * textureResolution + x] = colour;
@@ -170,10 +221,11 @@ public class DistantTerrainGenerator : MonoBehaviour {
         }
 
         texture.SetPixels(pixels);
-        texture.Apply();
+        texture.Apply(true, true);
 
         return texture;
     }
+
 
     /// Builds one terrain mesh using the same height
     /// calculations as the main procedural biome generator.
@@ -240,7 +292,7 @@ public class DistantTerrainGenerator : MonoBehaviour {
         MeshRenderer renderer = terrainObject.AddComponent<MeshRenderer>();
 
         Material material = new Material(distantTerrainMaterial);
-        Texture2D biomeTexture = GenerateBiomeTexture(startX, startZ, width, length);
+        Texture2D biomeTexture = GenerateBiomeTexture(startX, startZ, width, length, mesh);
 
         if (material.HasProperty("_MainTex")) {
             material.SetTexture("_MainTex", biomeTexture);
@@ -269,25 +321,34 @@ public class DistantTerrainGenerator : MonoBehaviour {
         return mountainMask * plainsMountainHeight * plainsWeight;
     }
 
-    /// Generates tall, rugged mountain formations in distant Snow regions.
-    /// Combines broad mountain shapes with ridged noise and uses the Snow
-    /// biome weight to prevent snowy peaks appearing in other biomes.
-    private float GetDistantMountainHeight(float x, float z)
-    {
+    /// Generates enormous snowy mountains with jagged ridges,
+    /// smaller peaks and irregular slopes. Keeps their massive
+    /// scale while adding detail similar to the main Snow mountains.
+    private float GetDistantMountainHeight(float x, float z) {
         float offsetX = biomeGenerator.seed * 0.137f;
         float offsetZ = biomeGenerator.seed * 0.293f;
 
         float regionNoise = Mathf.PerlinNoise(x * mountainScale + offsetX + 173f, z * mountainScale + offsetZ + 291f);
-        float detailNoise = Mathf.PerlinNoise(x * mountainDetailScale + offsetX + 431f, z * mountainDetailScale + offsetZ + 619f);
 
         float mountainMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(mountainThreshold, mountainFullHeightThreshold, regionNoise));
 
-        float ridges = 1f - Mathf.Abs(detailNoise * 2f - 1f);
-        ridges = Mathf.Pow(ridges, 1.5f);
+        float largeNoise = Mathf.PerlinNoise(x * 0.0012f + offsetX + 431f, z * 0.0012f + offsetZ + 619f);
+        float largeRidges = 1f - Mathf.Abs(largeNoise * 2f - 1f);
+
+        float mediumNoise = Mathf.PerlinNoise(x * 0.0035f + offsetX + 733f, z * 0.0035f + offsetZ + 887f);
+        float mediumRidges = 1f - Mathf.Abs(mediumNoise * 2f - 1f);
+
+        float fineNoise = Mathf.PerlinNoise(x * 0.009f + offsetX + 127f, z * 0.009f + offsetZ + 397f);
+        float fineRidges = 1f - Mathf.Abs(fineNoise * 2f - 1f);
+
+        float mountainBody = Mathf.Pow(largeRidges, 1.5f) * mountainHeight;
+
+        float mediumDetails = Mathf.Pow(mediumRidges, 2f) * 350f;
+        float fineDetails = Mathf.Pow(fineRidges, 3f) * 110f;
 
         float snowWeight = biomeGenerator.GetSnowBiomeWeight(x, z);
 
-        return mountainMask * Mathf.Lerp(0.65f, 1f, ridges) * mountainHeight * snowWeight;
+        return (mountainBody + mediumDetails + fineDetails) * mountainMask * snowWeight;
     }
 }
 

@@ -30,6 +30,9 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     [Range(0f, 20f)] public float biomeAngleDetail = 8f;
     public float biomeAngleDetailScale = 0.005f;
 
+    [Header("Mountain Terrain Layers")]
+    public TerrainLayer rockLayer;
+
     private enum Biome {
         Snow,
         Plains,
@@ -454,37 +457,72 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         return 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(45f - biomeAngleBlend, 45f + biomeAngleBlend, angularDistance));
     }
 
-    /// Paints the terrain using the same radial weights as height generation.
-    /// Keeps biome textures aligned with the curved boundaries across all tiles.
+    /// Paints the radial biomes with alpine snow and rock details.
+    /// Keeps high summits snowy, exposes rock on steep mountain faces,
+    /// and adds narrow, irregular snow streaks across rocky slopes.
     private void PaintBiomeTextures(Terrain terrain, Biome[] shuffled, float centreX, float centreZ) {
         TerrainData data = terrain.terrainData;
 
-        data.terrainLayers = new TerrainLayer[] { snowLayer, plainsLayer, desertLayer, swampLayer };
+        data.terrainLayers = new TerrainLayer[] { snowLayer, plainsLayer, desertLayer, swampLayer, rockLayer };
 
         int width = data.alphamapWidth;
         int height = data.alphamapHeight;
 
-        float[,,] splatmap = new float[height, width, 4];
+        float[,,] splatmap = new float[height, width, 5];
 
         Vector3 origin = terrain.transform.position;
         Vector3 size = data.size;
 
         for (int z = 0; z < height; z++) {
             for (int x = 0; x < width; x++) {
-                float worldX = origin.x + x / (float)(width - 1) * size.x;
-                float worldZ = origin.z + z / (float)(height - 1) * size.z;
+                float u = x / (float)(width - 1);
+                float v = z / (float)(height - 1);
+
+                float worldX = origin.x + u * size.x;
+                float worldZ = origin.z + v * size.z;
 
                 GetBiomeWeights(worldX, worldZ, centreX, centreZ, out float nw, out float ne, out float sw, out float se);
 
-                splatmap[z, x, (int)shuffled[0]] += nw;
-                splatmap[z, x, (int)shuffled[1]] += ne;
-                splatmap[z, x, (int)shuffled[2]] += sw;
-                splatmap[z, x, (int)shuffled[3]] += se;
+                float[] weights = { nw, ne, sw, se };
+
+                for (int i = 0; i < shuffled.Length; i++) {
+                    splatmap[z, x, (int)shuffled[i]] += weights[i];
+                }
+
+                float snowWeight = splatmap[z, x, (int)Biome.Snow];
+                float slope = data.GetSteepness(u, v);
+                float mountainHeight = data.GetInterpolatedHeight(u, v);
+
+                float rockMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(28f, 52f, slope));
+
+                float summitSnow = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(420f, 680f, mountainHeight));
+
+                float warp = (SampleNoise(worldX, worldZ, 0.003f, 317f, 593f) - 0.5f) * 85f;
+
+                float streakNoise = SampleNoise(worldX + warp, worldZ * 0.22f, 0.017f, 719f, 283f);
+
+                float streaks = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.64f, 0.77f, streakNoise));
+
+                float slopeMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(25f, 45f, slope));
+
+                float elevationMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(180f, 400f, mountainHeight));
+
+                float streakMask = streaks * slopeMask * elevationMask;
+                float snowRestoration = Mathf.Max(summitSnow * 0.95f, streakMask * 0.85f);
+
+                float finalRockMask = rockMask * (1f - snowRestoration);
+
+                float rockWeight = snowWeight * finalRockMask;
+
+                splatmap[z, x, (int)Biome.Snow] -= rockWeight;
+                splatmap[z, x, 4] = rockWeight;
             }
         }
 
         data.SetAlphamaps(0, 0, splatmap);
     }
+
+
 
     private float GetBiomeHeight(Biome biome, float x, float z) {
         switch (biome) {
@@ -916,5 +954,17 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
                     return Vector2.down; 
                 }
         }
+    }
+
+    /// Returns whether a position is inside the Plains boss summit.
+    /// Allows vegetation and future resources to avoid the arena.
+    public bool IsInsidePlainsBossArena(float x, float z) {
+        if (!samplingReady && !InitializeWorldSampling()) {
+            return false;
+        }
+
+        float distance = Vector2.Distance(new Vector2(x, z), plainsCliffCentre);
+
+        return distance < plainsCliffRadius * 0.4f;
     }
 }
