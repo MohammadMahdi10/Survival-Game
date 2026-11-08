@@ -91,6 +91,14 @@ public class PlayerStats : MonoBehaviour
 
         UpdateDifficultyStats();
         UpdateStatBars();
+
+        if (currentHunger <= 20f){
+            staminaRegenRate = 0;
+        }
+        else{
+            staminaRegenRate = 10f;
+        }
+
         if (isDead) return;
 
         if (!sprinting && !blocking)
@@ -226,6 +234,9 @@ public class PlayerStats : MonoBehaviour
         currentHunger = Mathf.Clamp(
             currentHunger + amount, 0f, maxHunger
         );
+        if (amount > 0){
+            Heal(amount/10);
+        }
     }
 
     /// Gradually drains the player's hunger over time.
