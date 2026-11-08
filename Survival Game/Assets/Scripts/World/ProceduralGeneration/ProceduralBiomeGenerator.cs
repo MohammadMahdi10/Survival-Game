@@ -22,6 +22,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     public TerrainLayer plainsLayer;
     public TerrainLayer desertLayer;
     public TerrainLayer swampLayer;
+    public TerrainLayer mudLayer;
 
     [Header("Radial Biome Generation")]
     [Range(1f, 40f)] public float biomeAngleBlend = 12f;
@@ -463,12 +464,12 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     private void PaintBiomeTextures(Terrain terrain, Biome[] shuffled, float centreX, float centreZ) {
         TerrainData data = terrain.terrainData;
 
-        data.terrainLayers = new TerrainLayer[] { snowLayer, plainsLayer, desertLayer, swampLayer, rockLayer };
+        data.terrainLayers = new TerrainLayer[] { snowLayer, plainsLayer, desertLayer, swampLayer, rockLayer, mudLayer };
 
         int width = data.alphamapWidth;
         int height = data.alphamapHeight;
 
-        float[,,] splatmap = new float[height, width, 5];
+        float[,,] splatmap = new float[height, width, 6];
 
         Vector3 origin = terrain.transform.position;
         Vector3 size = data.size;
@@ -513,6 +514,23 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
                 float finalRockMask = rockMask * (1f - snowRestoration);
 
                 float rockWeight = snowWeight * finalRockMask;
+
+                float mudNoise = SampleNoise(worldX, worldZ, 0.003f, 251f, 673f);
+                float mudDetail = SampleNoise(worldX, worldZ, 0.012f, 419f, 887f);
+
+                float mudPattern = mudNoise * 0.75f + mudDetail * 0.25f;
+
+                float mudMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.55f, 0.72f, mudPattern));
+
+                float lowlandMask = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(12f, 28f, mountainHeight));
+
+                float finalMudMask = mudMask * Mathf.Lerp(0.5f, 1f, lowlandMask) * 0.8f;
+
+                float swampWeight = splatmap[z, x, (int)Biome.Swamp];
+                float mudWeight = swampWeight * finalMudMask;
+
+                splatmap[z, x, (int)Biome.Swamp] -= mudWeight;
+                splatmap[z, x, 5] = mudWeight;
 
                 splatmap[z, x, (int)Biome.Snow] -= rockWeight;
                 splatmap[z, x, 4] = rockWeight;
