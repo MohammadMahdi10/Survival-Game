@@ -23,11 +23,11 @@ public class QuestUI : MonoBehaviour
 
         switch (stage) {
             case QuestManager.QuestStage.DefeatBoss:
-                questObjective.text = "Defeat the mini boss";
+                questObjective.text = "Defeat the mini boss near the spaceship";
                 break;
 
             case QuestManager.QuestStage.CollectStone:
-                questObjective.text = "Collect the repair component";
+                questObjective.text = "Collect the special item";
                 break;
 
             case QuestManager.QuestStage.Tower:
@@ -35,7 +35,7 @@ public class QuestUI : MonoBehaviour
                 break;
 
             case QuestManager.QuestStage.FinalBoss:
-                questObjective.text = "Defeat the final boss.";
+                questObjective.text = "Defeat the final boss near the tower.";
                 break;
 
             case QuestManager.QuestStage.CollectComponent:
