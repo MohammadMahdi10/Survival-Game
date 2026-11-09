@@ -254,7 +254,12 @@ public class PlayerStats : MonoBehaviour
             currentHunger + amount, 0f, maxHunger
         );
         if (amount > 0){
-            Heal(amount/10);
+            if (currentHunger >= 95){
+                Heal((amount + currentHunger - 100)+ (amount - (amount + currentHunger - 100))/2)
+            }
+            else{
+                Heal(amount)/2;
+            }
         }
     }
 
