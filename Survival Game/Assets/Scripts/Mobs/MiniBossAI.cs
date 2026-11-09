@@ -96,7 +96,7 @@ public class MiniBossAI : MonoBehaviour
             LookAtTarget();
             UpdateAnimator(false);
 
-            if (Time.time >= nextAttackTime && !isAttacking)
+            if (Time.time >= nextAttackTime && !isAttacking && horizontalDistance <= attackRange)
             {
                 TriggerAttack();
                 nextAttackTime = Time.time + attackCooldown;
@@ -110,6 +110,7 @@ public class MiniBossAI : MonoBehaviour
         {
             return;
         }
+
         animator.SetBool("IsRunning", isRunning);
 
         if (isRunning)
@@ -123,6 +124,7 @@ public class MiniBossAI : MonoBehaviour
         isAttacking = true;
         if (animator != null)
         {
+            animator.ResetTrigger("Attack");
             animator.SetTrigger("Attack");
         }
 
