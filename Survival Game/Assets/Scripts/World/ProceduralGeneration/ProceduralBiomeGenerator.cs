@@ -303,6 +303,8 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
             Vector3 origin = terrain.transform.position;
             Vector3 size = data.size;
 
+
+            // 
             for (int z = 0; z < resolution; z++) {
                 for (int x = 0; x < resolution; x++) {
                     float worldX = origin.x + x / (float)(resolution - 1) * size.x;
@@ -629,6 +631,24 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         }
 
         return SmoothMax(DesertMinHeight, baseTerrain + hills - basins + dunes, DesertFloorSoftness);
+    }
+
+    /// Returns where natural Swamp waterways should appear.
+    /// Reuses the same warped creek and lower level patterns as
+    /// the terrain so water follows the existing low ground.
+    public float GetSwampWaterMask(float x, float z) {
+        if (!samplingReady && !InitializeWorldSampling()) {
+            return 0f;
+        }
+
+        Vector2 p = GetWarpedPosition(x, z, SwampWarpStrength);
+
+        float creek = GetSwampCreekMask(p.x, p.y);
+
+        float lowNoise = SampleNoise(p.x, p.y, SwampDepressionFrequency, 853f, 149f);
+        float pond = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.58f, 0.73f, lowNoise));
+
+        return Mathf.Clamp01(Mathf.Max(creek, pond));
     }
 
     /// Positions the Plains mountain towards the outer edge of its biome.
