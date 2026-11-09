@@ -20,6 +20,10 @@ public class PlayerStats : MonoBehaviour
     public float currentStamina = 100f;
     public float staminaDrainRate = 10f;
     public float staminaRegenRate = 10f;
+    public float staminaCooldownDuration = 3f;
+
+    public bool staminaCooldownReady;
+    private bool coroutineReady = false;
 
     [Header("Hunger")]
     public float maxHunger = 100f;
@@ -103,7 +107,22 @@ public class PlayerStats : MonoBehaviour
 
         if (!sprinting && !blocking)
         {
-            RestoreStamina(staminaRegenRate * Time.deltaTime);
+            if (!coroutineReady){
+                StartCoroutine(StaminaCooldown(staminaCooldownDuration));
+                coroutineReady = true;
+            }
+
+            if (staminaCooldownReady){
+                RestoreStamina(staminaRegenRate * Time.deltaTime);
+            }
+        }
+
+        else{
+            staminaCooldownReady = false;
+            if (coroutineReady){
+                StopCoroutine(StaminaCooldown(staminaCooldownDuration));
+                coroutineReady = false;
+            }
         }
 
         // Calculates stamina consumption based on the player's current actions.
@@ -248,6 +267,14 @@ public class PlayerStats : MonoBehaviour
             ChangeHunger(-hungerDrain);
             yield return new WaitForSeconds(1f);
         }
+    }
+
+    /// Creates a cooldown for the stamina
+    private IEnumerator StaminaCooldown(float cooldown)
+    {
+        staminaCooldownReady = false;
+        yield return new WaitForSeconds(cooldown);
+        staminaCooldownReady = true;
     }
 
     /// Updates the health, hunger, and stamina UI bars.
