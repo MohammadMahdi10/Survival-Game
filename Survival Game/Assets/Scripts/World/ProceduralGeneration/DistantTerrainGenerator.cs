@@ -11,6 +11,9 @@ public class DistantTerrainGenerator : MonoBehaviour {
     [SerializeField] private ProceduralBiomeGenerator biomeGenerator;
     [SerializeField] private Material distantTerrainMaterial;
 
+    [Header("Distant Biome Textures")]
+    [SerializeField] private Texture2D distantPlainsTexture;
+
     [Header("Distant Terrain Settings")]
     [SerializeField] private int meshResolution = 128;
     [SerializeField] private int textureResolution = 512;
@@ -207,11 +210,13 @@ public class DistantTerrainGenerator : MonoBehaviour {
                         continue;
                     }
 
-                    Texture2D diffuse = layers[i].diffuseTexture;
+                    Texture2D diffuse = i == 1 && distantPlainsTexture != null ? distantPlainsTexture : layers[i].diffuseTexture;
 
-                    float textureU = Mathf.Repeat((worldX + layers[i].tileOffset.x) / layers[i].tileSize.x, 1f);
+                    float bakeTileSizeX = Mathf.Max(layers[i].tileSize.x, width / (textureResolution - 1f) * 4f);
+                    float bakeTileSizeZ = Mathf.Max(layers[i].tileSize.y, length / (textureResolution - 1f) * 4f);
 
-                    float textureV = Mathf.Repeat((worldZ + layers[i].tileOffset.y) / layers[i].tileSize.y, 1f);
+                    float textureU = Mathf.Repeat((worldX + layers[i].tileOffset.x) / bakeTileSizeX, 1f);
+                    float textureV = Mathf.Repeat((worldZ + layers[i].tileOffset.y) / bakeTileSizeZ, 1f);
 
                     colour += diffuse.GetPixelBilinear(textureU, textureV) * weights[i];
                 }

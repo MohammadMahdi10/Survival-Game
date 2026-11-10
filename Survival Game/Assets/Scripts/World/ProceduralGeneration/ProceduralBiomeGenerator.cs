@@ -3,6 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class ProceduralBiomeGenerator : MonoBehaviour {
+    [Header("World Generation")]
+    [SerializeField] private ProceduralEnvironmentSpawner environmentSpawner;
+    [SerializeField] private DistantTerrainGenerator distantTerrainGenerator;
+    [SerializeField] private ProceduralSwampWater swampWaterGenerator;
+
     [Header("Four Terrain Tiles")]
     public Terrain snowTerrain;
     public Terrain plainsTerrain;
@@ -333,6 +338,18 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
 
             data.SetHeights(0, 0, heights);
             PaintBiomeTextures(terrain, shuffled, centreX, centreZ);
+        }
+
+        if (environmentSpawner != null) {
+            environmentSpawner.GenerateVegetation();
+        }
+
+        if (distantTerrainGenerator != null) {
+            distantTerrainGenerator.GenerateDistantTerrain();
+        }
+
+        if (swampWaterGenerator != null) {
+            swampWaterGenerator.GenerateSwampWater();
         }
     }
 
