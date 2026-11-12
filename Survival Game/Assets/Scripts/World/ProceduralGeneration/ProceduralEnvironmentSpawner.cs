@@ -30,7 +30,6 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
     [SerializeField] private float environmentMinimumSpacing = 6f;
 
     [Header("Plains Trees")]
-    [SerializeField] private int plainsTreeCount = 1800;
     [SerializeField] private float maximumSlope = 8f;
     [SerializeField] private float kingdomExclusionRadius = 40f;
 
@@ -51,7 +50,6 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
     [SerializeField] private GameObject[] snowRockPrefabs;
 
     [Header("Snow Generation")]
-    [SerializeField] private int snowTreeCount = 900;
     [SerializeField] private int snowRockCount = 250;
     [SerializeField] private float snowMaximumSlope = 28f;
     [SerializeField] private float snowTreeLineHeight = 550f;

@@ -146,7 +146,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     private const float SwampLargeFrequency = 0.0015f;
     private const float SwampMediumFrequency = 0.006f;
     private const float SwampDetailFrequency = 0.02f;
-    private const float SwampBase = 9f;
+    private const float SwampBase = 16f;
     private const float SwampLargeHeight = 7f;
     private const float SwampMediumHeight = 3f;
     private const float SwampDepressionFrequency = 0.0035f;
@@ -163,7 +163,10 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     private const float SwampCreekFrequency = 0.004f;
     private const float SwampCreekInnerWidth = 0.01f;
     private const float SwampCreekOuterWidth = 0.06f;
-    private const float SwampCreekDepth = 5f;
+    private const float SwampCreekDepth = 12f;
+    private Vector2 swampCreekDirection;
+    private int cachedCreekSeed = int.MinValue;
+    private Vector2 cachedCreekCentre;
 
     private const float PlainsMountainRegionFrequency = 0.0008f;
     private const float PlainsMountainShapeFrequency = 0.0015f;
@@ -650,22 +653,46 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         return SmoothMax(DesertMinHeight, baseTerrain + hills - basins + dunes, DesertFloorSoftness);
     }
 
-    /// Returns where natural Swamp waterways should appear.
-    /// Reuses the same warped creek and lower level patterns as
-    /// the terrain so water follows the existing low ground.
+
+    /// Uses the exact same creek paths as terrain carving.
     public float GetSwampWaterMask(float x, float z) {
         if (!samplingReady && !InitializeWorldSampling()) {
             return 0f;
         }
 
-        Vector2 p = GetWarpedPosition(x, z, SwampWarpStrength);
+        return GetSwampCreekMask(x, z);
+    }
 
-        float creek = GetSwampCreekMask(p.x, p.y);
+    /// Finds the direction of the Swamp biome from the world centre.
+    /// Recalculates when the world seed or centre changes.
+    private Vector2 GetSwampCreekDirection() {
+        if (cachedCreekSeed == seed && cachedCreekCentre == worldCentre) {
+            return swampCreekDirection;
+        }
 
-        float lowNoise = SampleNoise(p.x, p.y, SwampDepressionFrequency, 853f, 149f);
-        float pond = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.58f, 0.73f, lowNoise));
+        float bestWeight = -1f;
+        Vector2 bestDirection = Vector2.up;
 
-        return Mathf.Clamp01(Mathf.Max(creek, pond));
+        for (int i = 0; i < 16; i++) {
+            float angle = i * Mathf.PI * 2f / 16f;
+            Vector2 direction = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+
+            float sampleX = worldCentre.x + direction.x * 1200f;
+            float sampleZ = worldCentre.y + direction.y * 1200f;
+
+            GetBiomeBlend(sampleX, sampleZ, out float snow, out float plains, out float desert, out float swamp);
+
+            if (swamp > bestWeight) {
+                bestWeight = swamp;
+                bestDirection = direction;
+            }
+        }
+
+        swampCreekDirection = bestDirection;
+        cachedCreekSeed = seed;
+        cachedCreekCentre = worldCentre;
+
+        return swampCreekDirection;
     }
 
     /// Positions the Plains mountain towards the outer edge of its biome.
@@ -766,6 +793,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         return Mathf.Pow(crest, DuneSharpness);
     }
 
+
     private float GetSwampHeight(float x, float z) {
         Vector2 p = GetWarpedPosition(x, z, SwampWarpStrength);
 
@@ -783,19 +811,66 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         float raisedGroundMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(SwampRaisedGroundStart, SwampRaisedGroundEnd, raisedGroundNoise));
         float raisedGround = raisedGroundMask * SwampRaisedGroundHeight;
 
+        float islandNoise = SampleNoise(p.x, p.y, 0.0018f, 937f, 421f);
+        float islandMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.52f, 0.72f, islandNoise));
+        float islandDetail = SampleNoise(p.x, p.y, 0.006f, 281f, 763f);
+
+        float creekMask = GetSwampCreekMask(x, z);
+
+        float pondMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.58f, 0.73f, depressionNoise));
+
+        float dryGroundMask = 1f - Mathf.Max(creekMask, pondMask);
+        float islandHeight = islandMask * (5f + islandDetail * 4f) * dryGroundMask * dryGroundMask;
+
+        raisedGround += islandHeight;
+
         float smallDetails = (detailNoise - 0.5f) * SwampDetailAmplitude;
 
-        float creeks = GetSwampCreekMask(p.x, p.y) * SwampCreekDepth;
+        float pondDepth = pondMask * 6f;
 
-        return Mathf.Max(SwampMinHeight, lowlands - depressions + raisedGround + smallDetails - creeks);
+        float groundHeight = lowlands - depressions + raisedGround + smallDetails - pondDepth;
+
+        float creekBedHeight = Mathf.Min(groundHeight, 7f);
+        float finalHeight = Mathf.Lerp(groundHeight, creekBedHeight, creekMask);
+
+        return Mathf.Max(SwampMinHeight, finalHeight);
     }
 
+    /// Creates a winding main creek with two smaller channels.
+    /// Uses normalised SmoothStep values so water remains inside
+    /// narrow rivers rather than flooding the surrounding swamp.
     private float GetSwampCreekMask(float x, float z) {
-        float creekNoise = SampleNoise(x, z, SwampCreekFrequency, 613f, 727f);
-        float distanceFromCentre = Mathf.Abs(creekNoise - 0.5f);
+        Vector2 direction = GetSwampCreekDirection();
+        Vector2 offset = new Vector2(x - worldCentre.x, z - worldCentre.y);
 
-        return 1f - Mathf.SmoothStep(SwampCreekInnerWidth, SwampCreekOuterWidth, distanceFromCentre);
+        float along = Vector2.Dot(offset, direction);
+        float sideways = offset.x * -direction.y + offset.y * direction.x;
+
+        float mainCurve = Mathf.Sin(along * 0.003f + seed * 0.11f) * 110f;
+        mainCurve += Mathf.Sin(along * 0.008f + seed * 0.21f) * 35f;
+
+        float mainDistance = Mathf.Abs(sideways - mainCurve);
+        float mainCreek = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(20f, 35f, mainDistance));
+
+        float branchOneOffset = Mathf.Max(0f, along - 750f) * 0.35f;
+        float branchOneDistance = Mathf.Abs(sideways - mainCurve - branchOneOffset);
+        float branchOne = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(8f, 17f, branchOneDistance));
+        branchOne *= Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(650f, 900f, along));
+
+        float branchTwoOffset = Mathf.Max(0f, along - 1050f) * 0.3f;
+        float branchTwoDistance = Mathf.Abs(sideways - mainCurve + branchTwoOffset);
+        float branchTwo = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(8f, 17f, branchTwoDistance));
+        branchTwo *= Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(950f, 1200f, along));
+
+        float startFade = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(250f, 450f, along));
+        float endFade = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(1850f, 2050f, along));
+
+        float creek = Mathf.Max(mainCreek, Mathf.Max(branchOne, branchTwo));
+
+        return Mathf.Clamp01(creek * startFade * endFade);
     }
+
+
 
     private float GetSnowHeight(float x, float z) {
         float lowlandNoise = SampleNoise(x, z, 0.003f, 51f, 73f);

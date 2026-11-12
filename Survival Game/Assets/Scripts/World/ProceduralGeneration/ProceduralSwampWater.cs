@@ -9,10 +9,9 @@ public class ProceduralSwampWater : MonoBehaviour {
 
     [Header("Water Generation")]
     [SerializeField] private float meshSpacing = 10f;
-    [SerializeField] private float waterSurfaceOffset = 0.15f;
     [SerializeField] private float waterMaskThreshold = 0.45f;
     [SerializeField] private float minimumSwampWeight = 0.9f;
-    [SerializeField] private float maximumSlope = 12f;
+    [SerializeField] private float waterLevel = 10f;
 
     [Header("World Limits")]
     [SerializeField] private float kingdomExclusionRadius = 350f;
@@ -69,21 +68,25 @@ public class ProceduralSwampWater : MonoBehaviour {
         }
     }
 
-    /// Builds connected water patches using the Swamp terrain's
-    /// existing creek and depression masks rather than random ponds.
+
+    /// Generates flat, horizontal water inside the swamp's existing
+    /// gaps and pond masks. Water only appears where the terrain
+    /// is below the chosen water level, leaving raised islands dry.
     private void GenerateWaterTile(Terrain terrain, Transform parent, Vector2 worldCentre) {
         Vector3 origin = terrain.transform.position;
-        Vector3 size = terrain.terrainData.size;
+        Vector3 terrainSize = terrain.terrainData.size;
 
-        int cellsX = Mathf.CeilToInt(size.x / meshSpacing);
-        int cellsZ = Mathf.CeilToInt(size.z / meshSpacing);
+        int cellsX = Mathf.CeilToInt(terrainSize.x / meshSpacing);
+        int cellsZ = Mathf.CeilToInt(terrainSize.z / meshSpacing);
 
-        float stepX = size.x / cellsX;
-        float stepZ = size.z / cellsZ;
+        float stepX = terrainSize.x / cellsX;
+        float stepZ = terrainSize.z / cellsZ;
 
         List<Vector3> vertices = new List<Vector3>();
         List<Vector2> uvs = new List<Vector2>();
         List<int> triangles = new List<int>();
+
+        float localWaterY = waterLevel - origin.y;
 
         for (int z = 0; z < cellsZ; z++) {
             for (int x = 0; x < cellsX; x++) {
@@ -95,9 +98,10 @@ public class ProceduralSwampWater : MonoBehaviour {
                 float centreX = (x0 + x1) * 0.5f;
                 float centreZ = (z0 + z1) * 0.5f;
 
-                float distance = Vector2.Distance(new Vector2(centreX, centreZ), worldCentre);
+                Vector2 point = new Vector2(centreX, centreZ);
+                float distanceFromCentre = Vector2.Distance(point, worldCentre);
 
-                if (distance < kingdomExclusionRadius || distance > playableRadius) {
+                if (distanceFromCentre < kingdomExclusionRadius || distanceFromCentre > playableRadius) {
                     continue;
                 }
 
@@ -113,24 +117,21 @@ public class ProceduralSwampWater : MonoBehaviour {
                     continue;
                 }
 
-                float u = Mathf.Clamp01((centreX - origin.x) / size.x);
-                float v = Mathf.Clamp01((centreZ - origin.z) / size.z);
+                float u = Mathf.Clamp01((centreX - origin.x) / terrainSize.x);
+                float v = Mathf.Clamp01((centreZ - origin.z) / terrainSize.z);
 
-                if (terrain.terrainData.GetSteepness(u, v) > maximumSlope) {
+                float groundY = terrain.terrainData.GetInterpolatedHeight(u, v) + origin.y;
+
+                if (groundY >= waterLevel - 0.05f) {
                     continue;
                 }
 
-                float y0 = terrain.SampleHeight(new Vector3(x0, 0f, z0)) + waterSurfaceOffset;
-                float y1 = terrain.SampleHeight(new Vector3(x1, 0f, z0)) + waterSurfaceOffset;
-                float y2 = terrain.SampleHeight(new Vector3(x0, 0f, z1)) + waterSurfaceOffset;
-                float y3 = terrain.SampleHeight(new Vector3(x1, 0f, z1)) + waterSurfaceOffset;
-
                 int index = vertices.Count;
 
-                vertices.Add(new Vector3(x0 - origin.x, y0, z0 - origin.z));
-                vertices.Add(new Vector3(x1 - origin.x, y1, z0 - origin.z));
-                vertices.Add(new Vector3(x0 - origin.x, y2, z1 - origin.z));
-                vertices.Add(new Vector3(x1 - origin.x, y3, z1 - origin.z));
+                vertices.Add(new Vector3(x0 - origin.x, localWaterY, z0 - origin.z));
+                vertices.Add(new Vector3(x1 - origin.x, localWaterY, z0 - origin.z));
+                vertices.Add(new Vector3(x0 - origin.x, localWaterY, z1 - origin.z));
+                vertices.Add(new Vector3(x1 - origin.x, localWaterY, z1 - origin.z));
 
                 uvs.Add(new Vector2(x0 / 10f, z0 / 10f));
                 uvs.Add(new Vector2(x1 / 10f, z0 / 10f));
@@ -161,8 +162,8 @@ public class ProceduralSwampWater : MonoBehaviour {
         mesh.RecalculateBounds();
 
         GameObject waterObject = new GameObject("SwampWater");
-        waterObject.transform.SetParent(parent);
-        waterObject.transform.position = new Vector3(origin.x, origin.y, origin.z);
+        waterObject.transform.SetParent(parent, false);
+        waterObject.transform.position = origin;
 
         MeshFilter filter = waterObject.AddComponent<MeshFilter>();
         filter.sharedMesh = mesh;
@@ -170,6 +171,7 @@ public class ProceduralSwampWater : MonoBehaviour {
         MeshRenderer renderer = waterObject.AddComponent<MeshRenderer>();
         renderer.sharedMaterial = swampWaterMaterial;
     }
+
 }
 
 

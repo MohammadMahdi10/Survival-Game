@@ -26,7 +26,6 @@ public class DistantTerrainGenerator : MonoBehaviour {
 
     [Header("Distant Snow Mountains")]
     [SerializeField] private float mountainScale = 0.00035f;
-    [SerializeField] private float mountainDetailScale = 0.0015f;
     [SerializeField] private float mountainHeight = 2200f;
     [SerializeField] private float mountainThreshold = 0.38f;
     [SerializeField] private float mountainFullHeightThreshold = 0.68f;
