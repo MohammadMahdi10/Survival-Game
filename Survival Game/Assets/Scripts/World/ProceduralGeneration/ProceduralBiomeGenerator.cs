@@ -143,11 +143,27 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
 
     private static readonly Vector2 DuneWindDirection = new Vector2(Mathf.Cos(DuneWindAngleDegrees * Mathf.Deg2Rad), Mathf.Sin(DuneWindAngleDegrees * Mathf.Deg2Rad));
 
+    [Header("Swamp")]
+    [SerializeField] private float swampWaterLevel = 10f;
+    public float SwampWaterLevel => swampWaterLevel;
+
+    private const float SwampBase = 13f;
+    private const float SwampLargeHeight = 6f;
+
+    private const float SwampMarshFrequency = 0.0025f;
+    private const float SwampMarshHeightAboveWater = -0.6f;
+    private const float SwampMarshStart = 0.35f;  
+    private const float SwampMarshEnd = 0.60f;
+
+    private const float SwampMainCreekInnerWidth = 26f;
+    private const float SwampMainCreekOuterWidth = 48f;
+
+    private const float MudShoreFalloff = 4f;
+    private const float MudShoreStrength = 0.95f;
+
     private const float SwampLargeFrequency = 0.0015f;
     private const float SwampMediumFrequency = 0.006f;
     private const float SwampDetailFrequency = 0.02f;
-    private const float SwampBase = 16f;
-    private const float SwampLargeHeight = 7f;
     private const float SwampMediumHeight = 3f;
     private const float SwampDepressionFrequency = 0.0035f;
     private const float SwampDepressionStart = 0.42f;
@@ -275,7 +291,8 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         }
 
         foreach (Terrain terrain in quadrantTerrains) {
-            if (terrain == null) {
+            if (terrain == null)
+            {
                 return;
             }
         }
@@ -298,9 +315,6 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         }
 
         float maxSnowHeight = GetMaxSnowHeight();
-
-        if (maxSnowHeight > tileSize.y) {
-        }
 
         foreach (Terrain terrain in quadrantTerrains) {
             TerrainData data = terrain.terrainData;
@@ -420,12 +434,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
             return float.NaN;
         }
 
-        float[] biomeHeights = {
-            GetSnowHeight(x, z),
-            GetPlainsHeight(x, z),
-            GetDesertHeight(x, z),
-            GetSwampHeight(x, z)
-        };
+        float[] biomeHeights = { GetSnowHeight(x, z), GetPlainsHeight(x, z), GetDesertHeight(x, z), GetSwampHeight(x, z) };
 
         GetBiomeWeights(x, z, worldCentre.x, worldCentre.y, out float nw, out float ne, out float sw, out float se);
 
@@ -439,8 +448,6 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         return terrainBaseY + Mathf.Clamp(height, 0f, tileExtent.y);
     }
 
-    /// Refreshes cached generation settings when Inspector values change.
-    /// Ensures future height samples use the current world configuration.
     private void OnValidate() {
         samplingReady = false;
     }
@@ -473,8 +480,6 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         se /= total;
     }
 
-    /// Smoothly blends neighbouring radial sectors along their angular borders.
-    /// Each sector covers approximately one quarter of the world.
     private float GetSectorWeight(float angle, float sectorAngle) {
         float angularDistance = Mathf.Abs(Mathf.DeltaAngle(angle, sectorAngle));
         return 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(45f - biomeAngleBlend, 45f + biomeAngleBlend, angularDistance));
@@ -547,6 +552,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
                 float lowlandMask = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(12f, 28f, mountainHeight));
 
                 float finalMudMask = mudMask * Mathf.Lerp(0.5f, 1f, lowlandMask) * 0.8f;
+                finalMudMask = Mathf.Max(finalMudMask, GetShoreMudMask(mountainHeight + origin.y));
 
                 float swampWeight = splatmap[z, x, (int)Biome.Swamp];
                 float mudWeight = swampWeight * finalMudMask;
@@ -562,7 +568,12 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         data.SetAlphamaps(0, 0, splatmap);
     }
 
-
+    /// Returns how strongly mud should appear based on how close
+    /// the ground is to the swamp waterline, so mud hugs the shores.
+    private float GetShoreMudMask(float worldHeight) {
+        float distanceFromWaterline = Mathf.Abs(worldHeight - swampWaterLevel);
+        return (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0f, MudShoreFalloff, distanceFromWaterline))) * MudShoreStrength;
+    }
 
     private float GetBiomeHeight(Biome biome, float x, float z) {
         switch (biome) {
@@ -828,12 +839,30 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
 
         float pondDepth = pondMask * 6f;
 
-        float groundHeight = lowlands - depressions + raisedGround + smallDetails - pondDepth;
+        float lowGround = lowlands - depressions - pondDepth + smallDetails;
+        lowGround = ApplyMarshFlats(lowGround, p);
+
+        float groundHeight = lowGround + raisedGround;
 
         float creekBedHeight = Mathf.Min(groundHeight, 7f);
         float finalHeight = Mathf.Lerp(groundHeight, creekBedHeight, creekMask);
 
         return Mathf.Max(SwampMinHeight, finalHeight);
+    }
+
+    /// Flattens parts of the swamp down to just above the waterline,
+    /// creating wet mudflats that connect ponds and creeks.
+    private float ApplyMarshFlats(float height, Vector2 p) {
+        float marshNoise = SampleNoise(p.x, p.y, SwampMarshFrequency, 211f, 577f);
+        float marshMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(SwampMarshStart, SwampMarshEnd, marshNoise));
+        float target = swampWaterLevel + SwampMarshHeightAboveWater;
+
+        if (height <= target)
+        {
+            return height;
+        }
+
+        return Mathf.Lerp(height, target, marshMask);
     }
 
     /// Creates a winding main creek with two smaller channels.
@@ -850,7 +879,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         mainCurve += Mathf.Sin(along * 0.008f + seed * 0.21f) * 35f;
 
         float mainDistance = Mathf.Abs(sideways - mainCurve);
-        float mainCreek = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(20f, 35f, mainDistance));
+        float mainCreek = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(SwampMainCreekInnerWidth, SwampMainCreekOuterWidth, mainDistance));
 
         float branchOneOffset = Mathf.Max(0f, along - 750f) * 0.35f;
         float branchOneDistance = Mathf.Abs(sideways - mainCurve - branchOneOffset);
@@ -869,8 +898,6 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
 
         return Mathf.Clamp01(creek * startFade * endFade);
     }
-
-
 
     private float GetSnowHeight(float x, float z) {
         float lowlandNoise = SampleNoise(x, z, 0.003f, 51f, 73f);
@@ -1018,7 +1045,6 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         return GetBiomeBorderFade(x, z, MountainBorderFadeWidth);
     }
 
-
     private Vector2 GetPeakWorldPosition(MountainPeak peak) {
         float lateral = (peak.position.x - 0.5f) * tileExtent.x * 1.5f;
         float outward = peak.position.y * tileExtent.z;
@@ -1052,8 +1078,6 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         return new Vector2(x + warpX, z + warpZ);
     }
 
-    /// Reduces large hills and mountains close to the central Kingdom.
-    /// Radial fading avoids straight cuts along the old quadrant boundaries.
     private float GetBiomeBorderFade(float x, float z, float fadeWidth) {
         float distance = Vector2.Distance(new Vector2(x, z), worldCentre);
         float fade = Mathf.InverseLerp(kingdomRadius + kingdomBlendWidth, kingdomRadius + kingdomBlendWidth + fadeWidth, distance);
@@ -1067,27 +1091,23 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         return Mathf.Lerp(a, b, h) + k * h * (1f - h);
     }
 
-    /// Returns the outward direction of the radial sector containing Snow.
-    /// Sector order matches the original shuffled biome indices.
     private static Vector2 GetSectorDirection(int sector) {
         switch (sector) {
-            case 0: { 
-                    return Vector2.up; 
+            case 0: {
+                    return Vector2.up;
                 }
-            case 1: { 
-                    return Vector2.right; 
+            case 1: {
+                    return Vector2.right;
                 }
-            case 2: { 
-                    return Vector2.left; 
+            case 2: {
+                    return Vector2.left;
                 }
-            default: { 
-                    return Vector2.down; 
+            default: {
+                    return Vector2.down;
                 }
         }
     }
 
-    /// Returns whether a position is inside the Plains boss summit.
-    /// Allows vegetation and future resources to avoid the arena.
     public bool IsInsidePlainsBossArena(float x, float z) {
         if (!samplingReady && !InitializeWorldSampling()) {
             return false;

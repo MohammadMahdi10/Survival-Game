@@ -77,6 +77,22 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
     [SerializeField] private float desertBushSpacing = 8f;
     [SerializeField] private float desertRockSpacing = 10f;
 
+    [Header("Swamp Reeds")]
+    [SerializeField] private GameObject[] swampReedPrefabs;
+    [SerializeField] private int swampReedCount = 450;
+    [SerializeField] private float swampReedSpacing = 4f;
+    [SerializeField] private float swampReedMinWaterMask = 0.2f;
+    [SerializeField] private float swampReedMaxWaterMask = 0.75f;
+    [SerializeField] private float swampReedScaleMin = 8f;
+    [SerializeField] private float swampReedScaleMax = 12f;
+
+    [Header("Swamp Trees")]
+    [SerializeField] private GameObject[] swampTreePrefabs;
+    [SerializeField] private int swampTreeCount = 350;
+    [SerializeField] private float swampTreeSpacing = 22f;
+    [SerializeField] private float swampTreeScaleMin = 2.5f;
+    [SerializeField] private float swampTreeScaleMax = 4.5f;
+
     /// Starts automatically updating chunk visibility during gameplay.
     /// Finds the chunks created earlier using Generate Vegetation.
     private void Start() {
@@ -289,6 +305,9 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
 
         SpawnSnowEnvironment(container.transform, terrains, worldCentre);
         SpawnDesertEnvironment(container.transform, terrains, worldCentre);
+
+        GenerateSwampReeds(terrains, container.transform, random, worldCentre, minX, maxX, minZ, maxZ);
+        GenerateSwampTrees(terrains, container.transform, random, worldCentre, minX, maxX, minZ, maxZ);
 
         UpdateChunkVisibility();
     }
@@ -992,8 +1011,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
     /// Each chunk has a noise based cactus amount, creating patches
     /// of vegetation separated by large areas of open sand.
     private void SpawnDesertCactusClusters(Terrain[] terrains, Vector2 worldCentre) {
-        if (cactusPrefabs == null || cactusPrefabs.Length == 0 || cactusCount <= 0)
-        {
+        if (cactusPrefabs == null || cactusPrefabs.Length == 0 || cactusCount <= 0) {
             return;
         }
 
@@ -1042,7 +1060,11 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
 
                 float density = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.42f, 0.72f, noise));
 
-                int clusters = density < 0.3f ? 0 : density < 0.65f ? 1 : 3;
+                int clusters = random.Next(0, 5);
+
+                if ((float)random.NextDouble() > Mathf.Lerp(0.15f, 0.9f, density)) {
+                    clusters = 0;
+                }
 
                 for (int cluster = 0; cluster < clusters && totalSpawned < cactusCount; cluster++) {
                     float groupX = Mathf.Lerp(startX, endX, (float)random.NextDouble());
@@ -1054,13 +1076,13 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
                         continue;
                     }
 
-                    int groupSize = random.Next(3, 9);
-                    float groupRadius = Mathf.Lerp(12f, 30f, (float)random.NextDouble());
+                    int groupSize = random.Next(1, 12);
+                    float groupRadius = Mathf.Lerp(8f, 45f, (float)random.NextDouble());
 
                     for (int i = 0; i < groupSize && totalSpawned < cactusCount; i++) {
                         for (int attempt = 0; attempt < 20; attempt++) {
                             float angle = (float)random.NextDouble() * Mathf.PI * 2f;
-                            float distance = Mathf.Sqrt((float)random.NextDouble()) * groupRadius;
+                            float distance = Mathf.Pow((float)random.NextDouble(), 1.5f) * groupRadius;
 
                             float x = groupX + Mathf.Cos(angle) * distance;
                             float z = groupZ + Mathf.Sin(angle) * distance;
@@ -1202,7 +1224,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
             bool nearCluster = false;
 
             foreach (Vector2 existingCentre in clusterCentres) {
-                if (Vector2.Distance(clusterCentre, existingCentre) < 75f) {
+                if (Vector2.Distance(clusterCentre, existingCentre) < (isBush ? 95f : 130f)) {
                     nearCluster = true;
                     break;
                 }
@@ -1238,24 +1260,32 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
             float regionNoise = Mathf.PerlinNoise(centreX * desertNoiseScale + biomeGenerator.seed * 0.137f + 173f, centreZ * desertNoiseScale + biomeGenerator.seed * 0.293f + 291f);
             float scrubDensity = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(desertClusterThreshold - 0.12f, desertClusterThreshold + 0.15f, regionNoise));
 
-            float clusterChance = isBush ? Mathf.Lerp(0.05f, 0.85f, scrubDensity) : Mathf.Lerp(0.2f, 0.9f, Mathf.InverseLerp(2f, 25f, centreSlope));
+            float patchNoise = Mathf.PerlinNoise(centreX * 0.0018f + biomeGenerator.seed * 0.17f, centreZ * 0.0018f + biomeGenerator.seed * 0.23f);
+
+            float clusterChance = isBush ? Mathf.Lerp(0.02f, 0.75f, scrubDensity) : Mathf.Lerp(0.08f, 0.85f, Mathf.InverseLerp(2f, 25f, centreSlope));
+
+            clusterChance *= Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.3f, 0.7f, patchNoise));
 
             if ((float)random.NextDouble() > clusterChance) {
                 continue;
             }
 
-            int clusterSize = isBush ? random.Next(4, 11) : random.Next(2, 9);
-            float clusterRadius = isBush ? 18f : 30f;
+            int clusterSize = isBush ? random.Next(1, 13) : random.Next(1, 10);
+            float clusterRadius = isBush ? Mathf.Lerp(8f, 40f, (float)random.NextDouble()) : Mathf.Lerp(10f, 55f, (float)random.NextDouble());
 
             int clusterSpawned = 0;
 
             for (int i = 0; i < clusterSize && spawned < targetCount; i++) {
                 for (int placementAttempt = 0; placementAttempt < 25; placementAttempt++) {
                     float angle = (float)random.NextDouble() * Mathf.PI * 2f;
-                    float distance = Mathf.Sqrt((float)random.NextDouble()) * clusterRadius;
 
-                    float x = centreX + Mathf.Cos(angle) * distance;
-                    float z = centreZ + Mathf.Sin(angle) * distance;
+                    float distance = Mathf.Pow((float)random.NextDouble(), 1.5f) * clusterRadius;
+
+                    float stretchX = Mathf.Lerp(0.6f, 1.5f, (float)random.NextDouble());
+                    float stretchZ = Mathf.Lerp(0.6f, 1.5f, (float)random.NextDouble());
+
+                    float x = centreX + Mathf.Cos(angle) * distance * stretchX;
+                    float z = centreZ + Mathf.Sin(angle) * distance * stretchZ;
 
                     Vector2 point = new Vector2(x, z);
                     float worldDistance = Vector2.Distance(point, worldCentre);
@@ -1441,6 +1471,206 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
         float density = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.35f, 0.65f, noise));
 
         return Mathf.RoundToInt(Mathf.Lerp(8f, 110f, density));
+    }
+
+    /// Spawns reeds around swamp water edges so the swamp feels wetter
+    /// and more natural without covering the whole biome uniformly.
+    private void GenerateSwampReeds(Terrain[] terrains, Transform parent, System.Random random, Vector2 worldCentre, float minX, float maxX, float minZ, float maxZ) {
+        if (swampReedPrefabs == null || swampReedPrefabs.Length == 0) {
+            return;
+        }
+
+        List<Vector2> placed = new List<Vector2>();
+
+        int spawned = 0;
+        int attempts = 0;
+        int maxAttempts = swampReedCount * 60;
+
+        while (spawned < swampReedCount && attempts < maxAttempts) {
+            attempts++;
+
+            float x = Mathf.Lerp(minX, maxX, (float)random.NextDouble());
+            float z = Mathf.Lerp(minZ, maxZ, (float)random.NextDouble());
+            Vector2 point = new Vector2(x, z);
+
+            if (Vector2.Distance(point, worldCentre) < kingdomExclusionRadius) {
+                continue;
+            }
+
+            if (Vector2.Distance(point, worldCentre) > 1950f) {
+                continue;
+            }
+
+            biomeGenerator.GetBiomeBlend(x, z, out float snow, out float plains, out float desert, out float swamp);
+
+            if (swamp < 0.8f) {
+                continue;
+            }
+
+            float waterMask = biomeGenerator.GetSwampWaterMask(x, z);
+
+            if (waterMask < swampReedMinWaterMask || waterMask > swampReedMaxWaterMask) {
+                continue;
+            }
+
+            bool tooClose = false;
+
+            foreach (Vector2 p in placed) {
+                if (Vector2.Distance(point, p) < swampReedSpacing) {
+                    tooClose = true;
+                    break;
+                }
+            }
+
+            if (tooClose) {
+                continue;
+            }
+
+            Terrain currentTerrain = GetTerrainAtPosition(terrains, x, z);
+
+            if (currentTerrain == null) {
+                continue;
+            }
+
+            Vector3 terrainOrigin = currentTerrain.transform.position;
+            Vector3 terrainSize = currentTerrain.terrainData.size;
+
+            float u = Mathf.Clamp01((x - terrainOrigin.x) / terrainSize.x);
+            float v = Mathf.Clamp01((z - terrainOrigin.z) / terrainSize.z);
+
+            if (currentTerrain.terrainData.GetSteepness(u, v) > maximumSlope) {
+                continue;
+            }
+
+            float y = currentTerrain.SampleHeight(new Vector3(x, 0f, z)) + terrainOrigin.y + 0.3f;
+
+            GameObject prefab = swampReedPrefabs[random.Next(swampReedPrefabs.Length)];
+
+            if (prefab == null) {
+                continue;
+            }
+
+            GameObject reed = Instantiate(prefab, new Vector3(x, y, z), Quaternion.identity, parent);
+            reed.transform.Rotate(0f, (float)random.NextDouble() * 360f, 0f);
+
+            float scale = Mathf.Lerp(swampReedScaleMin, swampReedScaleMax, (float)random.NextDouble());
+            reed.transform.localScale *= scale;
+
+            placed.Add(point);
+            spawned++;
+        }
+    }
+
+    /// Spawns swamp trees on wet ground and shallow water areas
+    /// to create a Moisty Mire style swamp feel.
+    private void GenerateSwampTrees(Terrain[] terrains, Transform parent, System.Random random, Vector2 worldCentre, float minX, float maxX, float minZ, float maxZ) {
+        if (swampTreePrefabs == null || swampTreePrefabs.Length == 0) {
+            return;
+        }
+
+        List<Vector2> placed = new List<Vector2>();
+
+        int spawned = 0;
+        int attempts = 0;
+        int maxAttempts = swampTreeCount * 80;
+
+        while (spawned < swampTreeCount && attempts < maxAttempts) {
+            attempts++;
+
+            float x = Mathf.Lerp(minX, maxX, (float)random.NextDouble());
+            float z = Mathf.Lerp(minZ, maxZ, (float)random.NextDouble());
+            Vector2 point = new Vector2(x, z);
+
+            if (Vector2.Distance(point, worldCentre) < kingdomExclusionRadius) {
+                continue;
+            }
+
+            if (Vector2.Distance(point, worldCentre) > 1950f) {
+                continue;
+            }
+
+            biomeGenerator.GetBiomeBlend(x, z, out float snow, out float plains, out float desert, out float swamp);
+
+            if (swamp < 0.82f) {
+                continue;
+            }
+
+            float waterMask = biomeGenerator.GetSwampWaterMask(x, z);
+
+
+            float waterSpawnChance = Mathf.Lerp(0.95f, 0.3f, waterMask);
+
+            if ((float)random.NextDouble() > waterSpawnChance) {
+                continue;
+            }
+
+            float clusterNoise = Mathf.PerlinNoise(x * 0.003f + biomeGenerator.seed * 0.19f + 211f, z * 0.003f + biomeGenerator.seed * 0.27f + 509f);
+
+            float treeSpawnChance = Mathf.Lerp(0.2f, 0.85f, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.3f, 0.7f, clusterNoise)));
+
+            if ((float)random.NextDouble() > treeSpawnChance) {
+                continue;
+            }
+
+            bool tooClose = false;
+
+            foreach (Vector2 p in placed) {
+                if (Vector2.Distance(point, p) < swampTreeSpacing) {
+                    tooClose = true;
+                    break;
+                }
+            }
+
+            if (tooClose) {
+                continue;
+            }
+
+            Terrain currentTerrain = GetTerrainAtPosition(terrains, x, z);
+
+            if (currentTerrain == null) {
+                continue;
+            }
+
+            Vector3 terrainOrigin = currentTerrain.transform.position;
+            Vector3 terrainSize = currentTerrain.terrainData.size;
+
+            float u = Mathf.Clamp01((x - terrainOrigin.x) / terrainSize.x);
+            float v = Mathf.Clamp01((z - terrainOrigin.z) / terrainSize.z);
+
+            if (currentTerrain.terrainData.GetSteepness(u, v) > maximumSlope) {
+                continue;
+            }
+
+            float y = currentTerrain.SampleHeight(new Vector3(x, 0f, z)) + terrainOrigin.y;
+
+            GameObject prefab = swampTreePrefabs[random.Next(swampTreePrefabs.Length)];
+
+            if (prefab == null) {
+                continue;
+            }
+
+            GameObject tree = Instantiate(prefab, new Vector3(x, y, z), Quaternion.identity, parent);
+            tree.transform.Rotate(0f, (float)random.NextDouble() * 360f, 0f);
+
+            float scale = Mathf.Lerp(swampTreeScaleMin, swampTreeScaleMax, (float)random.NextDouble());
+            tree.transform.localScale *= scale;
+
+            placed.Add(point);
+            spawned++;
+        }
+    }
+
+    private Terrain GetTerrainAtPosition(Terrain[] terrains, float x, float z) {
+        foreach (Terrain terrain in terrains) {
+            Vector3 origin = terrain.transform.position;
+            Vector3 terrainSize = terrain.terrainData.size;
+
+            if (x >= origin.x && x <= origin.x + terrainSize.x && z >= origin.z && z <= origin.z + terrainSize.z) {
+                return terrain;
+            }
+        }
+
+        return null;
     }
 }
 

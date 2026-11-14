@@ -8,10 +8,8 @@ public class ProceduralSwampWater : MonoBehaviour {
     [SerializeField] private Material swampWaterMaterial;
 
     [Header("Water Generation")]
-    [SerializeField] private float meshSpacing = 10f;
-    [SerializeField] private float waterMaskThreshold = 0.45f;
-    [SerializeField] private float minimumSwampWeight = 0.9f;
-    [SerializeField] private float waterLevel = 10f;
+    [SerializeField] private float meshSpacing = 6f;
+    [SerializeField] private float minimumSwampWeight = 0.6f;
 
     [Header("World Limits")]
     [SerializeField] private float kingdomExclusionRadius = 350f;
@@ -68,10 +66,34 @@ public class ProceduralSwampWater : MonoBehaviour {
         }
     }
 
+    private const float DepthForFullOpacity = 3f;
+    private const float GroundClearance = 0.05f;
 
-    /// Generates flat, horizontal water inside the swamp's existing
-    /// gaps and pond masks. Water only appears where the terrain
-    /// is below the chosen water level, leaving raised islands dry.
+    private float GetGroundY(Terrain terrain, float worldX, float worldZ)
+    {
+        Vector3 origin = terrain.transform.position;
+        Vector3 size = terrain.terrainData.size;
+
+        float u = Mathf.Clamp01((worldX - origin.x) / size.x);
+        float v = Mathf.Clamp01((worldZ - origin.z) / size.z);
+
+        return terrain.terrainData.GetInterpolatedHeight(u, v) + origin.y;
+    }
+
+    private Color GetWaterVertexColour(float groundY, float level)
+    {
+        float alpha = Mathf.Clamp01((level - groundY) / DepthForFullOpacity);
+        return new Color(1f, 1f, 1f, alpha);
+    }
+
+    private bool IsInsideWaterRange(Vector2 point, Vector2 worldCentre)
+    {
+        float distance = Vector2.Distance(point, worldCentre);
+        return distance >= kingdomExclusionRadius && distance <= playableRadius;
+    }
+
+    /// Generates flat water wherever the terrain dips below the shared
+    /// water level. Vertex fades with depth so shorelines blend softly.
     private void GenerateWaterTile(Terrain terrain, Transform parent, Vector2 worldCentre) {
         Vector3 origin = terrain.transform.position;
         Vector3 terrainSize = terrain.terrainData.size;
@@ -82,11 +104,13 @@ public class ProceduralSwampWater : MonoBehaviour {
         float stepX = terrainSize.x / cellsX;
         float stepZ = terrainSize.z / cellsZ;
 
+        float level = biomeGenerator.SwampWaterLevel;
+        float localWaterY = level - origin.y;
+
         List<Vector3> vertices = new List<Vector3>();
         List<Vector2> uvs = new List<Vector2>();
+        List<Color> colours = new List<Color>();
         List<int> triangles = new List<int>();
-
-        float localWaterY = waterLevel - origin.y;
 
         for (int z = 0; z < cellsZ; z++) {
             for (int x = 0; x < cellsX; x++) {
@@ -95,34 +119,26 @@ public class ProceduralSwampWater : MonoBehaviour {
                 float z0 = origin.z + z * stepZ;
                 float z1 = z0 + stepZ;
 
-                float centreX = (x0 + x1) * 0.5f;
-                float centreZ = (z0 + z1) * 0.5f;
+                Vector2 centre = new Vector2((x0 + x1) * 0.5f, (z0 + z1) * 0.5f);
 
-                Vector2 point = new Vector2(centreX, centreZ);
-                float distanceFromCentre = Vector2.Distance(point, worldCentre);
-
-                if (distanceFromCentre < kingdomExclusionRadius || distanceFromCentre > playableRadius) {
+                if (!IsInsideWaterRange(centre, worldCentre)) {
                     continue;
                 }
 
-                biomeGenerator.GetBiomeBlend(centreX, centreZ, out float snow, out float plains, out float desert, out float swamp);
+                biomeGenerator.GetBiomeBlend(centre.x, centre.y, out float snow, out float plains, out float desert, out float swamp);
 
                 if (swamp < minimumSwampWeight) {
                     continue;
                 }
 
-                float waterMask = biomeGenerator.GetSwampWaterMask(centreX, centreZ);
+                float y00 = GetGroundY(terrain, x0, z0);
+                float y10 = GetGroundY(terrain, x1, z0);
+                float y01 = GetGroundY(terrain, x0, z1);
+                float y11 = GetGroundY(terrain, x1, z1);
 
-                if (waterMask < waterMaskThreshold) {
-                    continue;
-                }
+                float lowest = Mathf.Min(Mathf.Min(y00, y10), Mathf.Min(y01, y11));
 
-                float u = Mathf.Clamp01((centreX - origin.x) / terrainSize.x);
-                float v = Mathf.Clamp01((centreZ - origin.z) / terrainSize.z);
-
-                float groundY = terrain.terrainData.GetInterpolatedHeight(u, v) + origin.y;
-
-                if (groundY >= waterLevel - 0.05f) {
+                if (lowest >= level - GroundClearance) {
                     continue;
                 }
 
@@ -138,10 +154,14 @@ public class ProceduralSwampWater : MonoBehaviour {
                 uvs.Add(new Vector2(x0 / 10f, z1 / 10f));
                 uvs.Add(new Vector2(x1 / 10f, z1 / 10f));
 
+                colours.Add(GetWaterVertexColour(y00, level));
+                colours.Add(GetWaterVertexColour(y10, level));
+                colours.Add(GetWaterVertexColour(y01, level));
+                colours.Add(GetWaterVertexColour(y11, level));
+
                 triangles.Add(index);
                 triangles.Add(index + 2);
                 triangles.Add(index + 1);
-
                 triangles.Add(index + 1);
                 triangles.Add(index + 2);
                 triangles.Add(index + 3);
@@ -157,6 +177,7 @@ public class ProceduralSwampWater : MonoBehaviour {
         mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
         mesh.SetVertices(vertices);
         mesh.SetUVs(0, uvs);
+        mesh.SetColors(colours);
         mesh.SetTriangles(triangles, 0);
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
@@ -165,13 +186,9 @@ public class ProceduralSwampWater : MonoBehaviour {
         waterObject.transform.SetParent(parent, false);
         waterObject.transform.position = origin;
 
-        MeshFilter filter = waterObject.AddComponent<MeshFilter>();
-        filter.sharedMesh = mesh;
-
-        MeshRenderer renderer = waterObject.AddComponent<MeshRenderer>();
-        renderer.sharedMaterial = swampWaterMaterial;
+        waterObject.AddComponent<MeshFilter>().sharedMesh = mesh;
+        waterObject.AddComponent<MeshRenderer>().sharedMaterial = swampWaterMaterial;
     }
-
 }
 
 

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 35ee76879a7c55e47a5ba9244bc082c3
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 212548
+  packageName: Gen04-Reeds-FREE
+  packageVersion: 1.0
+  assetPath: Assets/ReedsGen04-Reeds01/Scene/UniversalRenderPipelineAsset.asset
+  uploadId: 481423
