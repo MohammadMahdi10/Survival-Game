@@ -1672,5 +1672,61 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
 
         return null;
     }
+
+    public int GetDistantPlainsTreeBudget(float x, float z) {
+        return GetPlainsChunkTreeBudget(x, z);
+    }
+
+    public int GetDistantSnowTreeBudget(float x, float z) {
+        float noise = Mathf.PerlinNoise(x * snowForestNoiseScale + biomeGenerator.seed * 0.131f + 241f, z * snowForestNoiseScale + biomeGenerator.seed * 0.217f + 617f);
+
+        float density = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(snowForestThreshold - 0.1f, snowForestThreshold + 0.2f, noise));
+
+        return Mathf.RoundToInt(Mathf.Lerp(3f, 85f, density));
+    }
+
+    public float GetDistantPlainsTreeChance(float x, float z) {
+        float forestNoise = Mathf.PerlinNoise(x * forestNoiseScale + biomeGenerator.seed * 0.137f + 173f, z * forestNoiseScale + biomeGenerator.seed * 0.293f + 291f);
+        float forestDensity = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(forestThreshold, forestThreshold + 0.2f, forestNoise));
+
+        float woodlandNoise = Mathf.PerlinNoise(x * woodlandNoiseScale + biomeGenerator.seed * 0.173f + 391f, z * woodlandNoiseScale + biomeGenerator.seed * 0.227f + 617f);
+        float woodlandMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(woodlandThreshold, woodlandThreshold + 0.15f, woodlandNoise));
+
+        float combinedDensity = Mathf.Max(forestDensity, woodlandMask * woodlandDensity);
+
+        return Mathf.Lerp(scatteredTreeChance, 0.95f, combinedDensity);
+    }
+
+    public float GetDistantPlainsTreeSpacing(float x, float z) {
+        float forestNoise = Mathf.PerlinNoise(x * forestNoiseScale + biomeGenerator.seed * 0.137f + 173f, z * forestNoiseScale + biomeGenerator.seed * 0.293f + 291f);
+        float forestDensity = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(forestThreshold, forestThreshold + 0.2f, forestNoise));
+
+        float woodlandNoise = Mathf.PerlinNoise(x * woodlandNoiseScale + biomeGenerator.seed * 0.173f + 391f, z * woodlandNoiseScale + biomeGenerator.seed * 0.227f + 617f);
+        float woodlandMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(woodlandThreshold, woodlandThreshold + 0.15f, woodlandNoise));
+
+        float combinedDensity = Mathf.Max(forestDensity, woodlandMask * woodlandDensity);
+
+        return Mathf.Lerp(scatteredTreeSpacing, forestSpacing, combinedDensity);
+    }
+
+    public float GetDistantChunkSize() {
+        return chunkSize;
+    }
+
+    public float GetDistantPlainsMaximumSlope() {
+        return maximumSlope;
+    }
+
+    public float GetDistantSnowMaximumSlope() {
+        return snowMaximumSlope;
+    }
+
+    public float GetDistantSnowTreeSpacing() {
+        return snowTreeSpacing;
+    }
+
+    public float GetDistantSnowTreeLineHeight() {
+        return snowTreeLineHeight;
+    }
 }
 

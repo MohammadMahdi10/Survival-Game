@@ -9,6 +9,7 @@ public class DistantTerrainGenerator : MonoBehaviour {
 
     [Header("References")]
     [SerializeField] private ProceduralBiomeGenerator biomeGenerator;
+    [SerializeField] private ProceduralEnvironmentSpawner environmentSpawner;
     [SerializeField] private Material distantTerrainMaterial;
 
     [Header("Distant Biome Textures")]
@@ -35,6 +36,26 @@ public class DistantTerrainGenerator : MonoBehaviour {
     [SerializeField] private float plainsMountainScale = 0.0006f;
     [SerializeField] private float plainsMountainThreshold = 0.55f;
     [SerializeField] private float plainsMountainFullHeightThreshold = 0.82f;
+
+    [Header("Distant Vegetation Prefabs")]
+    [SerializeField] private GameObject[] distantPlainsTrees;
+    [SerializeField] private GameObject[] distantSnowTrees;
+    [SerializeField] private GameObject[] distantSwampTrees;
+    [SerializeField] private GameObject[] distantCacti;
+    [SerializeField] private GameObject[] distantBushes;
+    [SerializeField] private GameObject[] distantRocks;
+
+    [Header("Distant Vegetation Density")]
+    [SerializeField] private int distantTreeCount = 180;
+    [SerializeField] private int distantCactusCount = 55;
+    [SerializeField] private int distantBushCount = 45;
+    [SerializeField] private int distantRockCount = 35;
+
+    [Header("Distant Vegetation Fade")]
+    [SerializeField] private float vegetationFullDensityDistance = 200f;
+    [SerializeField] private float vegetationFadeDistance = 1400f;
+    [SerializeField] private float farDensityMultiplier = 0.35f;
+    [SerializeField] private float farSpacingMultiplier = 1.8f;
 
     private float worldMinX;
     private float worldMaxX;
@@ -125,7 +146,13 @@ public class DistantTerrainGenerator : MonoBehaviour {
         float snowMountains = GetDistantMountainHeight(x, z);
         float plainsMountains = GetDistantPlainsMountainHeight(x, z);
 
-        return originalHeight + (variation + snowMountains + plainsMountains) * blend;
+        float height = originalHeight + (variation + snowMountains + plainsMountains) * blend;
+
+        if (float.IsNaN(height) || float.IsInfinity(height)) {
+            return 0f;
+        }
+
+        return height;
     }
 
 
@@ -307,6 +334,139 @@ public class DistantTerrainGenerator : MonoBehaviour {
         }
 
         renderer.sharedMaterial = material;
+        SpawnDistantVegetation(terrainObject.transform, mesh, startX, startZ, width, length);
+    }
+
+    /// Generates simplified vegetation on each distant terrain mesh.
+    /// Uses the biome weights to choose which objects belong in each region.
+    private void SpawnDistantVegetation(Transform parent, Mesh mesh, float startX, float startZ, float width, float length)
+    {
+        GameObject container = new GameObject("DistantVegetation");
+        container.transform.SetParent(parent, false);
+
+        int tileX = Mathf.RoundToInt(startX / width);
+        int tileZ = Mathf.RoundToInt(startZ / length);
+
+        System.Random random = new System.Random(biomeGenerator.seed + tileX * 73856093 + tileZ * 19349663);
+
+        Vector3[] vertices = mesh.vertices;
+        Vector3[] normals = mesh.normals;
+
+        SpawnDistantForestChunks(container.transform, vertices, normals, startX, startZ, width, length, distantPlainsTrees, false);
+        SpawnDistantForestChunks(container.transform, vertices, normals, startX, startZ, width, length, distantSnowTrees, true);
+        SpawnDistantObjects(container.transform, vertices, normals, startX, startZ, width, length, distantSwampTrees, distantTreeCount, 2, random);
+        SpawnDistantObjects(container.transform, vertices, normals, startX, startZ, width, length, distantCacti, distantCactusCount, 3, random);
+        SpawnDistantObjects(container.transform, vertices, normals, startX, startZ, width, length, distantBushes, distantBushCount, 4, random);
+        SpawnDistantObjects(container.transform, vertices, normals, startX, startZ, width, length, distantRocks, distantRockCount, 5, random);
+    }
+
+    private void SpawnDistantObjects(Transform parent, Vector3[] vertices, Vector3[] normals, float startX, float startZ, float width, float length, GameObject[] prefabs, int targetCount, int objectType, System.Random random) {
+        if (prefabs == null || prefabs.Length == 0 || targetCount <= 0) {
+            return;
+        }
+
+        int spawned = 0;
+        int attempts = 0;
+        int maxAttempts = targetCount * 30;
+        int vertexCount = meshResolution + 1;
+
+        while (spawned < targetCount && attempts < maxAttempts) {
+            attempts++;
+
+            float x = startX + (float)random.NextDouble() * width;
+            float z = startZ + (float)random.NextDouble() * length;
+
+            biomeGenerator.GetBiomeBlend(x, z, out float snow, out float plains, out float desert, out float swamp);
+
+            float biomeWeight = objectType == 0 ? plains : objectType == 1 ? snow : objectType == 2 ? swamp : objectType == 3 ? desert : objectType == 4 ? desert : desert;
+
+            if (biomeWeight < 0.8f) {
+                continue;
+            }
+
+            float patchNoise = Mathf.PerlinNoise(x * 0.0012f + biomeGenerator.seed * 0.13f, z * 0.0012f + biomeGenerator.seed * 0.27f);
+
+            float spawnChance = Mathf.Lerp(0.05f, 0.9f, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.3f, 0.7f, patchNoise)));
+
+            if (objectType == 0 && environmentSpawner != null) {
+                spawnChance = environmentSpawner.GetDistantPlainsTreeChance(x, z);
+            }
+
+            if ((float)random.NextDouble() > spawnChance) {
+                continue;
+            }
+
+            float gridX = Mathf.Clamp(x - startX, 0f, width - 0.001f) / width * meshResolution;
+            float gridZ = Mathf.Clamp(z - startZ, 0f, length - 0.001f) / length * meshResolution;
+
+            int ix = Mathf.FloorToInt(gridX);
+            int iz = Mathf.FloorToInt(gridZ);
+
+            float fx = gridX - ix;
+            float fz = gridZ - iz;
+
+            int a = iz * vertexCount + ix;
+            int b = a + 1;
+            int c = a + vertexCount;
+            int d = c + 1;
+
+            float y;
+            Vector3 normal;
+
+            if (fx + fz <= 1f) {
+                y = vertices[a].y * (1f - fx - fz) + vertices[b].y * fx + vertices[c].y * fz;
+                normal = (normals[a] * (1f - fx - fz) + normals[b] * fx + normals[c] * fz).normalized;
+            }
+            else {
+                y = vertices[d].y * (fx + fz - 1f) + vertices[b].y * (1f - fz) + vertices[c].y * (1f - fx);
+                normal = (normals[d] * (fx + fz - 1f) + normals[b] * (1f - fz) + normals[c] * (1f - fx)).normalized;
+            }
+
+            if (float.IsNaN(y) || float.IsInfinity(y)) {
+                continue;
+            }
+
+            if (float.IsNaN(normal.x) || float.IsNaN(normal.y) || float.IsNaN(normal.z)) {
+                continue;
+            }
+
+            float slope = Vector3.Angle(normal, Vector3.up);
+
+            if (objectType == 5 ? slope > 45f : slope > 28f) {
+                continue;
+            }
+
+            if (objectType == 1 && y > 550f) {
+                continue;
+            }
+
+            if ((objectType == 0 || objectType == 4) && y > 550f) {
+                continue;
+            }
+
+            GameObject prefab = prefabs[random.Next(prefabs.Length)];
+
+            if (prefab == null) {
+                continue;
+            }
+
+            GameObject instance = Instantiate(prefab, new Vector3(x, y, z), Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f), parent);
+
+            float scale = objectType <= 2 ? Mathf.Lerp(2f, 3.5f, (float)random.NextDouble()) : Mathf.Lerp(1.5f, 3f, (float)random.NextDouble());
+
+            instance.transform.localScale *= scale;
+
+            foreach (Collider collider in instance.GetComponentsInChildren<Collider>()) {
+                collider.enabled = false;
+            }
+
+            foreach (Renderer objectRenderer in instance.GetComponentsInChildren<Renderer>()) {
+                objectRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                objectRenderer.receiveShadows = false;
+            }
+
+            spawned++;
+        }
     }
 
     /// Generates large rounded mountain formations in distant Plains.
@@ -353,6 +513,202 @@ public class DistantTerrainGenerator : MonoBehaviour {
         float snowWeight = biomeGenerator.GetSnowBiomeWeight(x, z);
 
         return (mountainBody + mediumDetails + fineDetails) * mountainMask * snowWeight;
+    }
+
+    private void SpawnDistantForestChunks(Transform parent, Vector3[] vertices, Vector3[] normals, float startX, float startZ, float width, float length, GameObject[] prefabs, bool isSnow) {
+        if (environmentSpawner == null || prefabs == null || prefabs.Length == 0) {
+            return;
+        }
+
+        float size = Mathf.Max(1f, environmentSpawner.GetDistantChunkSize());
+
+        int minChunkX = Mathf.FloorToInt(startX / size);
+        int maxChunkX = Mathf.CeilToInt((startX + width) / size);
+        int minChunkZ = Mathf.FloorToInt(startZ / size);
+        int maxChunkZ = Mathf.CeilToInt((startZ + length) / size);
+
+        List<Vector2> placedPositions = new List<Vector2>();
+
+        for (int chunkX = minChunkX; chunkX < maxChunkX; chunkX++) {
+            for (int chunkZ = minChunkZ; chunkZ < maxChunkZ; chunkZ++) {
+                float minX = Mathf.Max(startX, chunkX * size);
+                float maxX = Mathf.Min(startX + width, (chunkX + 1) * size);
+                float minZ = Mathf.Max(startZ, chunkZ * size);
+                float maxZ = Mathf.Min(startZ + length, (chunkZ + 1) * size);
+
+                if (minX >= maxX || minZ >= maxZ) {
+                    continue;
+                }
+
+                float centreX = (minX + maxX) * 0.5f;
+                float centreZ = (minZ + maxZ) * 0.5f;
+
+                int targetTrees = isSnow ? environmentSpawner.GetDistantSnowTreeBudget(centreX, centreZ) : environmentSpawner.GetDistantPlainsTreeBudget(centreX, centreZ);
+
+                float chunkDensityMultiplier = GetDistantDensityMultiplier(centreX, centreZ);
+                targetTrees = Mathf.RoundToInt(targetTrees * chunkDensityMultiplier);
+
+                if (targetTrees <= 0) {
+                    continue;
+                }
+
+                System.Random random = new System.Random(unchecked(biomeGenerator.seed + chunkX * 73856093 + chunkZ * 19349663 + (isSnow ? 9427 : 8421)));
+
+                int spawned = 0;
+                int attempts = 0;
+                int maxAttempts = targetTrees * (isSnow ? 60 : 100);
+
+                while (spawned < targetTrees && attempts < maxAttempts) {
+                    attempts++;
+
+                    float x = Mathf.Lerp(minX, maxX, (float)random.NextDouble());
+                    float z = Mathf.Lerp(minZ, maxZ, (float)random.NextDouble());
+
+                    biomeGenerator.GetBiomeBlend(x, z, out float snow, out float plains, out float desert, out float swamp);
+
+                    if (isSnow ? snow < 0.65f : plains < 0.85f) {
+                        continue;
+                    }
+
+                    float spawnChance = isSnow ? 1f : environmentSpawner.GetDistantPlainsTreeChance(x, z);
+
+                    float distanceFade = GetDistantVegetationFade(x, z);
+                    spawnChance *= Mathf.Lerp(1f, 0.65f, distanceFade);
+
+                    if ((float)random.NextDouble() > spawnChance) {
+                        continue;
+                    }
+
+                    if (!TrySampleDistantMesh(vertices, normals, x, z, startX, startZ, width, length, out float y, out float slope)) {
+                        continue;
+                    }
+                    float maxSlope = isSnow ? 38f : environmentSpawner.GetDistantPlainsMaximumSlope();
+
+                    if (slope > maxSlope) {
+                        continue;
+                    }
+
+                    if (isSnow && y > 1200f) {
+                        continue;
+                    }
+
+                    float spacing = isSnow ? environmentSpawner.GetDistantSnowTreeSpacing() : environmentSpawner.GetDistantPlainsTreeSpacing(x, z);
+
+                    spacing *= Mathf.Lerp(1f, farSpacingMultiplier, distanceFade);
+
+                    Vector2 point = new Vector2(x, z);
+                    bool tooClose = false;
+
+                    foreach (Vector2 placed in placedPositions) {
+                        if (Vector2.Distance(point, placed) < spacing) {
+                            tooClose = true;
+                            break;
+                        }
+                    }
+
+                    if (tooClose) {
+                        continue;
+                    }
+
+                    GameObject prefab = prefabs[random.Next(prefabs.Length)];
+
+                    if (prefab == null) {
+                        continue;
+                    }
+
+                    GameObject tree = Instantiate(prefab, new Vector3(x, y, z), Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f), parent);
+
+                    float scale;
+                    float heightMultiplier;
+
+                    if (isSnow && random.NextDouble() < 0.03) {
+                        scale = Mathf.Lerp(5f, 7f, (float)random.NextDouble());
+                        heightMultiplier = Mathf.Lerp(1.3f, 1.7f, (float)random.NextDouble());
+                    }
+
+                    else if (isSnow) {
+                        scale = Mathf.Lerp(1.2f, 4f, (float)random.NextDouble());
+                        heightMultiplier = Mathf.Lerp(1f, 1.6f, (float)random.NextDouble());
+                    }
+
+                    else {
+                        scale = Mathf.Lerp(0.8f, 2.8f, (float)random.NextDouble());
+                        heightMultiplier = Mathf.Lerp(0.85f, 1.4f, (float)random.NextDouble());
+                    }
+
+                    tree.transform.localScale = Vector3.Scale(tree.transform.localScale, new Vector3(scale, scale * heightMultiplier, scale));
+
+                    foreach (Collider collider in tree.GetComponentsInChildren<Collider>()) {
+                        collider.enabled = false;
+                    }
+
+                    foreach (Renderer treeRenderer in tree.GetComponentsInChildren<Renderer>()) {
+                        treeRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                        treeRenderer.receiveShadows = false;
+                    }
+
+                    placedPositions.Add(point);
+                    spawned++;
+                }
+            }
+        }
+    }
+
+    private bool TrySampleDistantMesh(Vector3[] vertices, Vector3[] normals, float x, float z, float startX, float startZ, float width, float length, out float y, out float slope) {
+        y = 0f;
+        slope = 0f;
+
+        float gx = Mathf.Clamp((x - startX) / width * meshResolution, 0f, meshResolution - 0.0001f);
+        float gz = Mathf.Clamp((z - startZ) / length * meshResolution, 0f, meshResolution - 0.0001f);
+
+        int ix = Mathf.FloorToInt(gx);
+        int iz = Mathf.FloorToInt(gz);
+
+        float fx = gx - ix;
+        float fz = gz - iz;
+
+        int row = meshResolution + 1;
+        int a = iz * row + ix;
+        int b = a + 1;
+        int c = a + row;
+        int d = c + 1;
+
+        Vector3 normal;
+
+        if (fx + fz <= 1f) {
+            y = vertices[a].y * (1f - fx - fz) + vertices[b].y * fx + vertices[c].y * fz;
+            normal = (normals[a] * (1f - fx - fz) + normals[b] * fx + normals[c] * fz).normalized;
+        }
+
+        else
+        {
+            y = vertices[d].y * (fx + fz - 1f) + vertices[b].y * (1f - fz) + vertices[c].y * (1f - fx);
+            normal = (normals[d] * (fx + fz - 1f) + normals[b] * (1f - fz) + normals[c] * (1f - fx)).normalized;
+        }
+
+        if (float.IsNaN(y) || float.IsInfinity(y) || float.IsNaN(normal.x) || float.IsNaN(normal.y) || float.IsNaN(normal.z)) {
+            return false;
+        }
+
+        slope = Vector3.Angle(normal, Vector3.up);
+
+        return !float.IsNaN(slope) && !float.IsInfinity(slope);
+    }
+
+    private float GetDistanceOutsideMainWorld(float x, float z) {
+        float outsideX = Mathf.Max(worldMinX - x, x - worldMaxX, 0f);
+        float outsideZ = Mathf.Max(worldMinZ - z, z - worldMaxZ, 0f);
+        return Mathf.Max(outsideX, outsideZ);
+    }
+
+    private float GetDistantVegetationFade(float x, float z) {
+        float distance = GetDistanceOutsideMainWorld(x, z);
+        return Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(vegetationFullDensityDistance, vegetationFadeDistance, distance));
+    }
+
+    private float GetDistantDensityMultiplier(float x, float z) {
+        float fade = GetDistantVegetationFade(x, z);
+        return Mathf.Lerp(1f, farDensityMultiplier, fade);
     }
 }
 
