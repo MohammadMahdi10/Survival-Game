@@ -29,6 +29,12 @@ public class MiniBossAI : MonoBehaviour
     [Header("World Difficulty")]
     public WorldDifficultyManager worldDifficultyManager;
 
+    [Header("Boss Health Bar")]
+    public string bossDisplayName = "Mini Boss";
+    public float healthBarRange = 25f;          // show the bar within this distance
+    public float healthBarHideBuffer = 3f;      // extra distance before hiding (stops flickering)
+    private EnemyHealth enemyHealth;
+
     private NavMeshAgent agent;
     private Vector3 lastDestination;
 
@@ -37,6 +43,7 @@ public class MiniBossAI : MonoBehaviour
     void Start()
     {
         agent = GetComponent<NavMeshAgent>();
+        enemyHealth = GetComponent<EnemyHealth>();
 
         // Find the player in the scene if not assigned
         FindPlayerTarget();
@@ -77,6 +84,7 @@ public class MiniBossAI : MonoBehaviour
         playerPos.y = 0f; // Ignore vertical distance for detection
 
         float horizontalDistance = Vector3.Distance(bossPos, playerPos);
+        UpdateBossBar(horizontalDistance);
 
         if (horizontalDistance > detectionRange)
         {
@@ -101,6 +109,19 @@ public class MiniBossAI : MonoBehaviour
                 TriggerAttack();
                 nextAttackTime = Time.time + attackCooldown;
             }
+        }
+    }
+    private void UpdateBossBar(float distance)
+    {
+        if (enemyHealth == null) return;
+
+        if (distance <= healthBarRange)
+        {
+            BossHealthBarUI.Instance.Show(enemyHealth, bossDisplayName);
+        }
+        else if (distance > healthBarRange + healthBarHideBuffer)
+        {
+            BossHealthBarUI.Hide(enemyHealth);
         }
     }
 

@@ -6969,6 +6969,10 @@ PrefabInstance:
       value: DesertBoss
       objectReference: {fileID: 0}
     - target: {fileID: 8475801376183019457, guid: 1392717c092628343be649a6cb8e5a10, type: 3}
+      propertyPath: biomeType
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8475801376183019457, guid: 1392717c092628343be649a6cb8e5a10, type: 3}
       propertyPath: questManager
       value: 
       objectReference: {fileID: 1177441552}
@@ -8499,6 +8503,10 @@ PrefabInstance:
     - target: {fileID: 5908341802503165038, guid: b84786ee9eefc7a45a9edcb1d379bb88, type: 3}
       propertyPath: m_Name
       value: SwampBoss
+      objectReference: {fileID: 0}
+    - target: {fileID: 8475801376183019457, guid: b84786ee9eefc7a45a9edcb1d379bb88, type: 3}
+      propertyPath: biomeType
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 8475801376183019457, guid: b84786ee9eefc7a45a9edcb1d379bb88, type: 3}
       propertyPath: questManager
@@ -17122,6 +17130,10 @@ PrefabInstance:
     - target: {fileID: 5908341802503165038, guid: 26819ee4727f46a4e8b4288fe5fd8b31, type: 3}
       propertyPath: m_Name
       value: PlainsBoss
+      objectReference: {fileID: 0}
+    - target: {fileID: 8475801376183019457, guid: 26819ee4727f46a4e8b4288fe5fd8b31, type: 3}
+      propertyPath: biomeType
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8475801376183019457, guid: 26819ee4727f46a4e8b4288fe5fd8b31, type: 3}
       propertyPath: questManager
