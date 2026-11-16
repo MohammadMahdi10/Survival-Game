@@ -14,9 +14,14 @@ public class DistantTerrainGenerator : MonoBehaviour {
 
     [Header("Distant Biome Textures")]
     [SerializeField] private Texture2D distantPlainsTexture;
+    [SerializeField] private Texture2D distantSwampMudTexture;
+
+    [Header("Distant Swamp Appearance")]
+    [SerializeField, Range(0f, 1f)] private float distantMudStrength = 0.8f;
+    [SerializeField] private float distantMudNoiseScale = 0.003f;
 
     [Header("Distant Terrain Settings")]
-    [SerializeField] private int meshResolution = 128;
+    [SerializeField] private int meshResolution = 256;
     [SerializeField] private int textureResolution = 512;
 
     [Header("Outer Terrain Variation")]
@@ -56,6 +61,14 @@ public class DistantTerrainGenerator : MonoBehaviour {
     [SerializeField] private float vegetationFadeDistance = 1400f;
     [SerializeField] private float farDensityMultiplier = 0.35f;
     [SerializeField] private float farSpacingMultiplier = 1.8f;
+
+    [Header("Distant Swamp Water")]
+    [SerializeField] private Material distantSwampWaterMaterial;
+    [SerializeField] private float distantWaterMeshSpacing = 10f;
+
+    [Header("Distant Swamp Trees")]
+    [SerializeField] private int distantSwampTreeCount = 55;
+
 
     private float worldMinX;
     private float worldMaxX;
@@ -148,6 +161,16 @@ public class DistantTerrainGenerator : MonoBehaviour {
 
         float height = originalHeight + (variation + snowMountains + plainsMountains) * blend;
 
+        biomeGenerator.GetBiomeBlend(x, z, out float snow, out float plains, out float desert, out float swamp);
+
+        if (swamp > 0.5f) {
+            float waterMask = biomeGenerator.GetSwampWaterMask(x, z);
+            float creekStrength = waterMask * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.5f, 0.9f, swamp));
+
+            float creekBed = Mathf.Min(height, biomeGenerator.SwampWaterLevel - 2f);
+            height = Mathf.Lerp(height, creekBed, creekStrength);
+        }
+
         if (float.IsNaN(height) || float.IsInfinity(height)) {
             return 0f;
         }
@@ -163,7 +186,7 @@ public class DistantTerrainGenerator : MonoBehaviour {
         Texture2D texture = new Texture2D(textureResolution, textureResolution, TextureFormat.RGBA32, true);
         texture.wrapMode = TextureWrapMode.Clamp;
 
-        TerrainLayer[] layers = { biomeGenerator.snowLayer, biomeGenerator.plainsLayer, biomeGenerator.desertLayer, biomeGenerator.swampLayer, biomeGenerator.rockLayer };
+        TerrainLayer[] layers = { biomeGenerator.snowLayer, biomeGenerator.plainsLayer, biomeGenerator.desertLayer, biomeGenerator.swampLayer, biomeGenerator.rockLayer, biomeGenerator.mudLayer };
 
         Color[] pixels = new Color[textureResolution * textureResolution];
 
@@ -227,7 +250,10 @@ public class DistantTerrainGenerator : MonoBehaviour {
                 float rock = snow * rockMask * (1f - snowRestoration);
                 snow -= rock;
 
-                float[] weights = { snow, plains, desert, swamp, rock };
+                float mudWeight = swamp * biomeGenerator.GetSwampMudMask(worldX, worldZ, mountainHeight);
+                swamp -= mudWeight;
+
+                float[] weights = { snow, plains, desert, swamp, rock, mudWeight };
 
                 Color colour = Color.black;
 
@@ -334,6 +360,8 @@ public class DistantTerrainGenerator : MonoBehaviour {
         }
 
         renderer.sharedMaterial = material;
+
+        GenerateDistantSwampWater(terrainObject.transform, startX, startZ, width, length);
         SpawnDistantVegetation(terrainObject.transform, mesh, startX, startZ, width, length);
     }
 
@@ -354,7 +382,7 @@ public class DistantTerrainGenerator : MonoBehaviour {
 
         SpawnDistantForestChunks(container.transform, vertices, normals, startX, startZ, width, length, distantPlainsTrees, false);
         SpawnDistantForestChunks(container.transform, vertices, normals, startX, startZ, width, length, distantSnowTrees, true);
-        SpawnDistantObjects(container.transform, vertices, normals, startX, startZ, width, length, distantSwampTrees, distantTreeCount, 2, random);
+        SpawnDistantObjects(container.transform, vertices, normals, startX, startZ, width, length, distantSwampTrees, distantSwampTreeCount, 2, random);
         SpawnDistantObjects(container.transform, vertices, normals, startX, startZ, width, length, distantCacti, distantCactusCount, 3, random);
         SpawnDistantObjects(container.transform, vertices, normals, startX, startZ, width, length, distantBushes, distantBushCount, 4, random);
         SpawnDistantObjects(container.transform, vertices, normals, startX, startZ, width, length, distantRocks, distantRockCount, 5, random);
@@ -775,6 +803,77 @@ public class DistantTerrainGenerator : MonoBehaviour {
     private float GetDistantDensityMultiplier(float x, float z) {
         float fade = GetDistantVegetationFade(x, z);
         return Mathf.Lerp(1f, farDensityMultiplier, fade);
+    }
+
+    private void GenerateDistantSwampWater(Transform parent, float startX, float startZ, float width, float length) {
+        if (distantSwampWaterMaterial == null) {
+            return;
+        }
+
+        List<Vector3> vertices = new List<Vector3>();
+        List<int> triangles = new List<int>();
+
+        float spacing = Mathf.Max(2f, distantWaterMeshSpacing);
+
+        for (float z = 0f; z < length; z += spacing) {
+            for (float x = 0f; x < width; x += spacing) {
+                float cellWidth = Mathf.Min(spacing, width - x);
+                float cellLength = Mathf.Min(spacing, length - z);
+
+                float worldX = startX + x + cellWidth * 0.5f;
+                float worldZ = startZ + z + cellLength * 0.5f;
+
+                biomeGenerator.GetBiomeBlend(worldX, worldZ, out float snow, out float plains, out float desert, out float swamp);
+
+                if (swamp < 0.8f || biomeGenerator.GetSwampWaterMask(worldX, worldZ) < 0.65f) {
+                    continue;
+                }
+
+                float groundY = SampleDistantHeight(worldX, worldZ);
+
+                if (float.IsNaN(groundY) || float.IsInfinity(groundY) || groundY >= biomeGenerator.SwampWaterLevel) {
+                    continue;
+                }
+
+                int index = vertices.Count;
+                float y = biomeGenerator.SwampWaterLevel;
+
+                vertices.Add(new Vector3(x, y, z));
+                vertices.Add(new Vector3(x, y, z + cellLength));
+                vertices.Add(new Vector3(x + cellWidth, y, z));
+                vertices.Add(new Vector3(x + cellWidth, y, z + cellLength));
+
+                triangles.Add(index);
+                triangles.Add(index + 1);
+                triangles.Add(index + 2);
+
+                triangles.Add(index + 2);
+                triangles.Add(index + 1);
+                triangles.Add(index + 3);
+            }
+        }
+
+        if (vertices.Count == 0) {
+            return;
+        }
+
+        Mesh mesh = new Mesh();
+        mesh.name = "DistantSwampWaterMesh";
+        mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+        mesh.SetVertices(vertices);
+        mesh.SetTriangles(triangles, 0);
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+
+        GameObject waterObject = new GameObject("DistantSwampWater");
+        waterObject.transform.SetParent(parent, false);
+
+        MeshFilter filter = waterObject.AddComponent<MeshFilter>();
+        filter.sharedMesh = mesh;
+
+        MeshRenderer waterRenderer = waterObject.AddComponent<MeshRenderer>();
+        waterRenderer.sharedMaterial = distantSwampWaterMaterial;
+        waterRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
     }
 }
 

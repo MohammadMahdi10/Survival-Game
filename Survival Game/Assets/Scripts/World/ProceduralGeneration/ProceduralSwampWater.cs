@@ -69,8 +69,10 @@ public class ProceduralSwampWater : MonoBehaviour {
     private const float DepthForFullOpacity = 3f;
     private const float GroundClearance = 0.05f;
 
-    private float GetGroundY(Terrain terrain, float worldX, float worldZ)
-    {
+    public Material SwampWaterMaterial => swampWaterMaterial;
+    public float MinimumSwampWeight => minimumSwampWeight;
+
+    private float GetGroundY(Terrain terrain, float worldX, float worldZ) {
         Vector3 origin = terrain.transform.position;
         Vector3 size = terrain.terrainData.size;
 
@@ -80,14 +82,12 @@ public class ProceduralSwampWater : MonoBehaviour {
         return terrain.terrainData.GetInterpolatedHeight(u, v) + origin.y;
     }
 
-    private Color GetWaterVertexColour(float groundY, float level)
-    {
+    public static Color GetWaterVertexColour(float groundY, float level) {
         float alpha = Mathf.Clamp01((level - groundY) / DepthForFullOpacity);
         return new Color(1f, 1f, 1f, alpha);
     }
 
-    private bool IsInsideWaterRange(Vector2 point, Vector2 worldCentre)
-    {
+    private bool IsInsideWaterRange(Vector2 point, Vector2 worldCentre) {
         float distance = Vector2.Distance(point, worldCentre);
         return distance >= kingdomExclusionRadius && distance <= playableRadius;
     }

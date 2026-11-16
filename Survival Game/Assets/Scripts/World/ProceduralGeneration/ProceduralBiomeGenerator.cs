@@ -542,17 +542,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
 
                 float rockWeight = snowWeight * finalRockMask;
 
-                float mudNoise = SampleNoise(worldX, worldZ, 0.003f, 251f, 673f);
-                float mudDetail = SampleNoise(worldX, worldZ, 0.012f, 419f, 887f);
-
-                float mudPattern = mudNoise * 0.75f + mudDetail * 0.25f;
-
-                float mudMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.55f, 0.72f, mudPattern));
-
-                float lowlandMask = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(12f, 28f, mountainHeight));
-
-                float finalMudMask = mudMask * Mathf.Lerp(0.5f, 1f, lowlandMask) * 0.8f;
-                finalMudMask = Mathf.Max(finalMudMask, GetShoreMudMask(mountainHeight + origin.y));
+                float finalMudMask = GetSwampMudMask(worldX, worldZ, mountainHeight + origin.y);
 
                 float swampWeight = splatmap[z, x, (int)Biome.Swamp];
                 float mudWeight = swampWeight * finalMudMask;
@@ -568,9 +558,28 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         data.SetAlphamaps(0, 0, splatmap);
     }
 
+    public float GetSwampMudMask(float x, float z, float worldHeight) {
+        if (!samplingReady && !InitializeWorldSampling()) {
+            return 0f;
+        }
+
+        float mudNoise = SampleNoise(x, z, 0.003f, 251f, 673f);
+        float mudDetail = SampleNoise(x, z, 0.012f, 419f, 887f);
+
+        float mudPattern = mudNoise * 0.75f + mudDetail * 0.25f;
+        float mudMask = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.55f, 0.72f, mudPattern));
+
+        float localHeight = worldHeight - terrainBaseY;
+        float lowlandMask = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(12f, 28f, localHeight));
+
+        float finalMudMask = mudMask * Mathf.Lerp(0.5f, 1f, lowlandMask) * 0.8f;
+
+        return Mathf.Clamp01(Mathf.Max(finalMudMask, GetShoreMudMask(worldHeight)));
+    }
+
     /// Returns how strongly mud should appear based on how close
     /// the ground is to the swamp waterline, so mud hugs the shores.
-    private float GetShoreMudMask(float worldHeight) {
+    public float GetShoreMudMask(float worldHeight) {
         float distanceFromWaterline = Mathf.Abs(worldHeight - swampWaterLevel);
         return (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0f, MudShoreFalloff, distanceFromWaterline))) * MudShoreStrength;
     }
@@ -892,7 +901,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         branchTwo *= Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(950f, 1200f, along));
 
         float startFade = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(250f, 450f, along));
-        float endFade = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(1850f, 2050f, along));
+        float endFade = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(4200f, 4600f, along));
 
         float creek = Mathf.Max(mainCreek, Mathf.Max(branchOne, branchTwo));
 
