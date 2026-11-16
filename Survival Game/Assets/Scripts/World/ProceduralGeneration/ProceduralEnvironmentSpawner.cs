@@ -55,7 +55,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
     [SerializeField] private float snowTreeLineHeight = 550f;
     [SerializeField] private float snowForestNoiseScale = 0.0016f;
     [SerializeField] private float snowForestThreshold = 0.45f;
-    [SerializeField] private float snowTreeSpacing = 10f;
+    [SerializeField] private float snowTreeSpacing = 16f;
     [SerializeField] private float snowRockSpacing = 9f;
     private List<Vector2> snowTreePositions = new List<Vector2>();
 
@@ -204,7 +204,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
                     Vector2 point = new Vector2(x, z);
                     float centreDistance = Vector2.Distance(point, worldCentre);
 
-                    if (centreDistance < kingdomExclusionRadius || centreDistance > 1950f) {
+                    if (centreDistance < kingdomExclusionRadius) {
                         continue;
                     }
 
@@ -766,7 +766,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
                 float forestNoise = Mathf.PerlinNoise(centreX * snowForestNoiseScale + biomeGenerator.seed * 0.131f + 241f, centreZ * snowForestNoiseScale + biomeGenerator.seed * 0.217f + 617f);
 
                 float forestDensity = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(snowForestThreshold - 0.1f, snowForestThreshold + 0.2f, forestNoise));
-                int targetTrees = Mathf.RoundToInt(Mathf.Lerp(3f, 85f, forestDensity));
+                int targetTrees = Mathf.RoundToInt(Mathf.Lerp(2f, 45f, forestDensity));
 
                 System.Random random = new System.Random(unchecked(biomeGenerator.seed + chunkX * 73856093 + chunkZ * 19349663 + 9427));
 
@@ -783,7 +783,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
                     Vector2 point = new Vector2(x, z);
                     float centreDistance = Vector2.Distance(point, worldCentre);
 
-                    if (centreDistance < kingdomExclusionRadius || centreDistance > 1950f) {
+                    if (centreDistance < kingdomExclusionRadius) {
                         continue;
                     }
 
@@ -1682,7 +1682,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
 
         float density = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(snowForestThreshold - 0.1f, snowForestThreshold + 0.2f, noise));
 
-        return Mathf.RoundToInt(Mathf.Lerp(3f, 85f, density));
+        return Mathf.RoundToInt(Mathf.Lerp(2f, 45f, density));
     }
 
     public float GetDistantPlainsTreeChance(float x, float z) {
@@ -1727,6 +1727,25 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
 
     public float GetDistantSnowTreeLineHeight() {
         return snowTreeLineHeight;
+    }
+
+    public float GetDistantSwampTreeChance(float x, float z) {
+        float waterMask = biomeGenerator.GetSwampWaterMask(x, z);
+        float waterChance = Mathf.Lerp(0.95f, 0.3f, waterMask);
+
+        float clusterNoise = Mathf.PerlinNoise(x * 0.003f + biomeGenerator.seed * 0.19f + 211f, z * 0.003f + biomeGenerator.seed * 0.27f + 509f);
+        float clusterDensity = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.3f, 0.7f, clusterNoise));
+        float treeChance = Mathf.Lerp(0.2f, 0.85f, clusterDensity);
+
+        return waterChance * treeChance;
+    }
+
+    public float GetDistantSwampTreeSpacing() {
+        return swampTreeSpacing;
+    }
+
+    public Vector2 GetDistantSwampTreeScale() {
+        return new Vector2(swampTreeScaleMin, swampTreeScaleMax);
     }
 }
 

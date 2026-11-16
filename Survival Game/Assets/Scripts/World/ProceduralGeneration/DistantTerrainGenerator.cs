@@ -370,11 +370,45 @@ public class DistantTerrainGenerator : MonoBehaviour {
         int maxAttempts = targetCount * 30;
         int vertexCount = meshResolution + 1;
 
+        float groupX = 0f;
+        float groupZ = 0f;
+        float groupRadius = 0f;
+        int groupRemaining = 0;
+
+        List<Vector2> placedPositions = new List<Vector2>();
+
         while (spawned < targetCount && attempts < maxAttempts) {
             attempts++;
 
-            float x = startX + (float)random.NextDouble() * width;
-            float z = startZ + (float)random.NextDouble() * length;
+            float x;
+            float z;
+
+            if (objectType >= 3) {
+                if (groupRemaining <= 0) {
+                    groupX = startX + (float)random.NextDouble() * width;
+                    groupZ = startZ + (float)random.NextDouble() * length;
+
+                    groupRemaining = objectType == 3 ? random.Next(1, 12) : objectType == 4 ? random.Next(1, 13) : random.Next(1, 10);
+                    groupRadius = objectType == 3 ? Mathf.Lerp(8f, 45f, (float)random.NextDouble()) : objectType == 4 ? Mathf.Lerp(8f, 40f, (float)random.NextDouble()) : Mathf.Lerp(10f, 55f, (float)random.NextDouble());
+                }
+
+                groupRemaining--;
+
+                float angle = (float)random.NextDouble() * Mathf.PI * 2f;
+                float distance = Mathf.Pow((float)random.NextDouble(), 1.5f) * groupRadius;
+
+                x = groupX + Mathf.Cos(angle) * distance;
+                z = groupZ + Mathf.Sin(angle) * distance;
+
+                if (x < startX || x >= startX + width || z < startZ || z >= startZ + length) {
+                    continue;
+                }
+            }
+            else
+            {
+                x = startX + (float)random.NextDouble() * width;
+                z = startZ + (float)random.NextDouble() * length;
+            }
 
             biomeGenerator.GetBiomeBlend(x, z, out float snow, out float plains, out float desert, out float swamp);
 
@@ -388,9 +422,15 @@ public class DistantTerrainGenerator : MonoBehaviour {
 
             float spawnChance = Mathf.Lerp(0.05f, 0.9f, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.3f, 0.7f, patchNoise)));
 
+            if (objectType == 2 && environmentSpawner != null) {
+                spawnChance = environmentSpawner.GetDistantSwampTreeChance(x, z);
+            }
+
             if (objectType == 0 && environmentSpawner != null) {
                 spawnChance = environmentSpawner.GetDistantPlainsTreeChance(x, z);
             }
+
+            spawnChance *= GetDistantDensityMultiplier(x, z);
 
             if ((float)random.NextDouble() > spawnChance) {
                 continue;
@@ -432,6 +472,10 @@ public class DistantTerrainGenerator : MonoBehaviour {
 
             float slope = Vector3.Angle(normal, Vector3.up);
 
+            if (objectType == 2 && environmentSpawner != null && slope > environmentSpawner.GetDistantPlainsMaximumSlope()) {
+                continue;
+            }
+
             if (objectType == 5 ? slope > 45f : slope > 28f) {
                 continue;
             }
@@ -441,6 +485,23 @@ public class DistantTerrainGenerator : MonoBehaviour {
             }
 
             if ((objectType == 0 || objectType == 4) && y > 550f) {
+                continue;
+            }
+
+            float minimumSpacing = objectType == 2 ? environmentSpawner.GetDistantSwampTreeSpacing() : objectType == 3 ? 14f : objectType == 4 ? 8f : 10f;
+
+            minimumSpacing *= Mathf.Lerp(1f, farSpacingMultiplier, GetDistantVegetationFade(x, z));
+
+            bool tooClose = false;
+
+            foreach (Vector2 placed in placedPositions) {
+                if (Vector2.Distance(new Vector2(x, z), placed) < minimumSpacing) {
+                    tooClose = true;
+                    break;
+                }
+            }
+
+            if (tooClose) {
                 continue;
             }
 
@@ -454,6 +515,11 @@ public class DistantTerrainGenerator : MonoBehaviour {
 
             float scale = objectType <= 2 ? Mathf.Lerp(2f, 3.5f, (float)random.NextDouble()) : Mathf.Lerp(1.5f, 3f, (float)random.NextDouble());
 
+            if (objectType == 2 && environmentSpawner != null) {
+                Vector2 swampScale = environmentSpawner.GetDistantSwampTreeScale();
+                scale = Mathf.Lerp(swampScale.x, swampScale.y, (float)random.NextDouble());
+            }
+
             instance.transform.localScale *= scale;
 
             foreach (Collider collider in instance.GetComponentsInChildren<Collider>()) {
@@ -466,6 +532,7 @@ public class DistantTerrainGenerator : MonoBehaviour {
             }
 
             spawned++;
+            placedPositions.Add(new Vector2(x, z));
         }
     }
 
@@ -573,7 +640,6 @@ public class DistantTerrainGenerator : MonoBehaviour {
                     float spawnChance = isSnow ? 1f : environmentSpawner.GetDistantPlainsTreeChance(x, z);
 
                     float distanceFade = GetDistantVegetationFade(x, z);
-                    spawnChance *= Mathf.Lerp(1f, 0.65f, distanceFade);
 
                     if ((float)random.NextDouble() > spawnChance) {
                         continue;
