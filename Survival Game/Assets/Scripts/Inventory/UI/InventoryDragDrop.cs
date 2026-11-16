@@ -168,21 +168,6 @@ public class InventoryDragDrop : MonoBehaviour
         if (Mouse.current.leftButton.wasReleasedThisFrame) {
             if (valid) {
                 hover.inventory.Place(heldType, heldShape, origin);
-
-
-                // Only update collection quests when an item moves from the ground
-                // into the player's backpack, preventing false quest progression.
-                if (sourceGrid.inventory == groundInventory && hover.inventory == playerInventory) {
-                    if (questManager != null) {
-                        if (heldType == ItemType.SpecialItem) {
-                            questManager.StoneCollected();
-                        }
-                        else if (heldType == ItemType.RepairComponent) {
-                            questManager.ComponentCollected();
-                        }
-                    }
-                }
-
             }
             else {
                 sourceGrid.inventory.Place(heldType, sourceShape, sourceOrigin);
@@ -235,6 +220,10 @@ public class InventoryDragDrop : MonoBehaviour
         }
 
         ghostRoot.gameObject.SetActive(true);
+        Canvas ghostCanvas = ghostRoot.GetComponent<Canvas>();
+        if (ghostCanvas == null) ghostCanvas = ghostRoot.gameObject.AddComponent<Canvas>();
+        ghostCanvas.overrideSorting = true; // fix for item dissapearing behind other elements when dragging
+        ghostCanvas.sortingOrder = 50;
         foreach (Transform child in ghostRoot) Destroy(child.gameObject);
         ghostCells.Clear();
 

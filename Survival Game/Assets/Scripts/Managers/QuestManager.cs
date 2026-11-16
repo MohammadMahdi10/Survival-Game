@@ -8,6 +8,7 @@ using UnityEngine;
 public class QuestManager : MonoBehaviour {
 
     [SerializeField] private QuestUI questUI;
+    [SerializeField] private GridInventory backpack;
 
     /// Defines the possible stages of the main quest,
     /// from defeating the first boss to completing the game.
@@ -104,6 +105,27 @@ public class QuestManager : MonoBehaviour {
 
         currentStage = QuestStage.Completed;
         UpdateQuest();
+    }
+
+    /// Watches the backpack instead of the drag-and-drop code, so items are counted correctly.
+    /// counts drag drop, backpack, and auto pickup.
+    private void OnEnable()
+    {
+        if (backpack != null) backpack.Changed += CheckQuestItems;
+    }
+
+    private void OnDisable()
+    {
+        if (backpack != null) backpack.Changed -= CheckQuestItems;
+    }
+
+    /// Advances collection stages when the required item is in the backpack.
+    /// StoneCollected and ComponentCollected already ignore calls at the
+    /// wrong stage, so calling them on every backpack change is safe.
+    private void CheckQuestItems()
+    {
+        if (backpack.Count(ItemType.SpecialItem) > 0) StoneCollected();
+        if (backpack.Count(ItemType.RepairComponent) > 0) ComponentCollected();
     }
 
 }

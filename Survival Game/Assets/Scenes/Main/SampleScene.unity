@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.09675569, g: 0.35171568, b: 0.7160293, a: 1}
+  m_IndirectSpecularColor: {r: 0.096754305, g: 0.35154676, b: 0.7148684, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -1073,7 +1073,6 @@ MonoBehaviour:
   directionalSun: {fileID: 705507994}
   dayText: {fileID: 93412361}
   timeText: {fileID: 1209393397}
-  hardcoreText: {fileID: 0}
   daySkyColor: {r: 0.4, g: 0.7, b: 1, a: 1}
   nightSkyColor: {r: 0.05, g: 0.05, b: 0.15, a: 1}
   dayEquatorColor: {r: 0.7, g: 0.8, b: 0.9, a: 1}
@@ -4599,6 +4598,7 @@ MonoBehaviour:
   player: {fileID: 1304997871}
   pickupRadius: 2
   dropDistance: 1.5
+  backpack: {fileID: 1707525388}
 --- !u!223 &437319377
 Canvas:
   m_ObjectHideFlags: 0
@@ -10861,6 +10861,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   questUI: {fileID: 861794625}
+  backpack: {fileID: 1707525388}
 --- !u!1001 &1185420709
 PrefabInstance:
   m_ObjectHideFlags: 0

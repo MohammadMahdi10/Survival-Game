@@ -10,6 +10,7 @@ public class GroundItems : MonoBehaviour
     [SerializeField] private Transform player;
     [SerializeField] private float pickupRadius = 2f;
     [SerializeField] private float dropDistance = 1.5f;
+    [SerializeField] private GridInventory backpack;
 
     private bool quitting;
 
@@ -20,26 +21,37 @@ public class GroundItems : MonoBehaviour
 
     }
 
-    /// Loads nearby world pickups into the ground inventory when opened.
-    /// Only removes pickups from the world after they successfully fit
-    /// into the grid, preventing items from being lost.
+    /// Collects nearby world pickups when the inventory opens.
+    /// Items go straight into the backpack if they fit, no need to drag drop.
+    /// Anything that doesn't fit goes to the ground grid so the player can rearrange and decide.
+    /// Pickups only removed from the world once they have a place so they dont dissapear othwerise.
     private void OnEnable()
     {
-        int loaded = 0;
+        int toBackpack = 0, toGround = 0;
 
-        // Iterate over a copy because pickups may be removed from the active list.
+        // Iterate over a copy because destroyed pickups leave the active list.
         foreach (var pickup in new List<WorldPickup>(WorldPickup.All))
         {
             if (Vector3.Distance(player.position, pickup.transform.position) > pickupRadius)
                 continue;
 
-            if (groundGrid.TryAddItem(pickup.type) != null)
+            if (backpack.TryAddItemAnyRotation(pickup.type) != null)
             {
-                Destroy(pickup.gameObject);
-                loaded++;
+                toBackpack++;
             }
+            else if (groundGrid.TryAddItem(pickup.type) != null)
+            {
+                toGround++;
+            }
+            else
+            {
+                continue;   // no space, leave it in on the ground
+            }
+
+            Destroy(pickup.gameObject);
         }
-        Debug.Log("[Ground] opened: loaded " + loaded + ", ground grid now has " + groundGrid.Items.Count);
+
+        Debug.Log("[Pickup] backpack: " + toBackpack + ", ground: " + toGround);
     }
 
     /// Returns items remaining in the ground inventory to the world.
