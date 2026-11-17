@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using TMPro;
 
-/// Handles dragging, dropping, rotating and equipping inventory items.
-/// Allows items to move between inventory grids and updates quest progress
-/// when special quest items are collected from the ground.
+/// Handles dragging, dropping, rotating and equipping inventory items,
+/// and guides the player with a hover highlight and context hints,
+/// since playtesters didn't realise items could be dragged.
 public class InventoryDragDrop : MonoBehaviour
 {
     /// Stores an inventory and the UI layer used to display its items.
@@ -35,9 +36,13 @@ public class InventoryDragDrop : MonoBehaviour
     private Vector2Int sourceOrigin;
     private Vector2Int[] sourceShape;
 
-    [SerializeField] private QuestManager questManager;
-    [SerializeField] private GridInventory groundInventory;
-    [SerializeField] private GridInventory playerInventory;
+    [Header("Guidance")]
+    [SerializeField] private TMP_Text hintText;
+    [SerializeField] private Color hoverColour = new Color(1f, 1f, 1f, 0.25f);
+
+    private RectTransform hoverRoot;
+    private readonly List<Image> hoverCells = new();
+    private PlacedItem hoveredItem;
 
     /// Calculates the distance between neighbouring inventory cells,
     /// including the spacing between them.
@@ -55,6 +60,7 @@ public class InventoryDragDrop : MonoBehaviour
     /// This prevents items from disappearing when a drag is interrupted.
     private void OnDisable()
     {
+        UpdateHover(null, null);
         if (holding)
         {
             sourceGrid.inventory.Place(heldType, sourceShape, sourceOrigin);
@@ -113,6 +119,9 @@ public class InventoryDragDrop : MonoBehaviour
 
         if (!holding)
         {
+            PlacedItem underMouse = hover != null ? hover.inventory.GetItemAt(cell) : null;
+            UpdateHover(hover, underMouse);
+            SetHint(IdleHint(underMouse, screen));
             bool equipPressed = Keyboard.current != null && Keyboard.current.fKey.wasPressedThisFrame;
 
             if (equipPressed)
@@ -143,6 +152,9 @@ public class InventoryDragDrop : MonoBehaviour
 
         Vector2Int origin = cell - grabOffset;
         bool valid = hover != null && hover.inventory.CanPlace(heldShape, origin);
+        SetHint(valid ? "Release to place  •  [R] Rotate"
+            : hover == null ? "Release to put it back  •  [R] Rotate"
+            : "Doesn't fit here  •  [R] Rotate");
 
         // Snap to the grid when over one, otherwise follow the cursor
         Vector2 pos;
@@ -184,6 +196,7 @@ public class InventoryDragDrop : MonoBehaviour
     private void TryPickUp(GridView g, Vector2Int cell)
     {
         PlacedItem item = g.inventory.GetItemAt(cell);
+        UpdateHover(null, null);   // the dragged preview replaces the highlight
         if (item == null) return;
 
         holding = true;
@@ -206,39 +219,102 @@ public class InventoryDragDrop : MonoBehaviour
     }
 
 
-    /// Creates or refreshes the visual preview of the held item.
-    /// Displays the item's shape, colour and label while it is being dragged.
+    /// Creates or refreshes the drag preview of the held item,
+    /// showing its shape, colour and label while it is being dragged.
     private void BuildGhost()
     {
-        if (ghostRoot == null)
+        ShowOverlay(ref ghostRoot, "Ghost", 50);
+        BuildShapeCells(ghostRoot, heldShape, ghostCells);
+        ItemLabels.Add(ghostRoot, heldType, heldShape, cellSize, spacing, Vector2Int.zero);
+    }
+
+    /// Highlights the item under the mouse so players can see items are
+    /// interactive. Only rebuilds when the hovered item changes, rather than
+    /// every frame.
+    private void UpdateHover(GridView grid, PlacedItem item)
+    {
+        if (item == hoveredItem) return;
+        hoveredItem = item;
+
+        if (item == null)
         {
-            var go = new GameObject("Ghost", typeof(RectTransform));
-            go.transform.SetParent(transform, false);
-            ghostRoot = (RectTransform)go.transform;
-            ghostRoot.anchorMin = ghostRoot.anchorMax = ghostRoot.pivot = new Vector2(0, 1);
-            ghostRoot.sizeDelta = Vector2.zero;
+            if (hoverRoot != null) hoverRoot.gameObject.SetActive(false);
+            return;
         }
 
-        ghostRoot.gameObject.SetActive(true);
-        Canvas ghostCanvas = ghostRoot.GetComponent<Canvas>();
-        if (ghostCanvas == null) ghostCanvas = ghostRoot.gameObject.AddComponent<Canvas>();
-        ghostCanvas.overrideSorting = true; // fix for item dissapearing behind other elements when dragging
-        ghostCanvas.sortingOrder = 50;
-        foreach (Transform child in ghostRoot) Destroy(child.gameObject);
-        ghostCells.Clear();
+        // Sits above the panels (10) but below the drag preview (50).
+        ShowOverlay(ref hoverRoot, "Hover", 40);
+        BuildShapeCells(hoverRoot, item.shape, hoverCells);
+        foreach (var img in hoverCells) img.color = hoverColour;
 
-        var cells = new HashSet<Vector2Int>(heldShape);
-        foreach (var offset in heldShape)
+        Vector2 pos = GridCorner(grid) + new Vector2(item.origin.x * Step, item.origin.y * Step);
+        hoverRoot.anchoredPosition = new Vector2(pos.x, -pos.y);
+    }
+
+    /// Chooses the hint for when nothing is being dragged, based on what is
+    /// under the mouse, so players discover dragging and equipping themselves.
+    private string IdleHint(PlacedItem underMouse, Vector2 screen)
+    {
+        if (underMouse != null)
+            return ItemShapes.IsEquippable(underMouse.type)
+                ? "Click and drag to move  •  [F] Equip"
+                : "Click and drag to move";
+
+        if (equipment.HasEquipped && equippedSlot != null &&
+            RectTransformUtility.RectangleContainsScreenPoint(equippedSlot, screen))
+            return "[F] Unequip";
+
+        return "Drag items to organise them  •  [R] rotates a held item";
+    }
+
+    /// Updates the hint text only when it changes, because setting TMP text
+    /// every frame forces the text to be rebuilt unnecessarily.
+    private void SetHint(string message)
+    {
+        if (hintText != null && hintText.text != message) hintText.text = message;
+    }
+
+    /// Creates one time and shows an overlay for the drag preview or hover
+    /// highlight. Each overlay gets its own sorting canvas because the backpack
+    /// and ground panels sort separately, and the overlay must draw above both.
+    /// Canvas settings are applied after activating, since Unity only applies
+    /// override sorting reliably to an active canvas.
+    private RectTransform ShowOverlay(ref RectTransform root, string name, int sortingOrder)
+    {
+        if (root == null)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(transform, false);
+            root = (RectTransform)go.transform;
+            root.anchorMin = root.anchorMax = root.pivot = new Vector2(0, 1);
+            root.sizeDelta = Vector2.zero;
+        }
+
+        root.gameObject.SetActive(true);
+        Canvas canvas = root.GetComponent<Canvas>();
+        if (canvas == null) canvas = root.gameObject.AddComponent<Canvas>();
+        canvas.overrideSorting = true;
+        canvas.sortingOrder = sortingOrder;
+        return root;
+    }
+
+    /// Fills an overlay with one image per cell of a shape. Neighbouring cells
+    /// stretch into the spacing so multi-cell items read as one piece.
+    /// Shared by the drag preview and hover highlight so both match the grid.
+    private void BuildShapeCells(RectTransform root, Vector2Int[] shape, List<Image> images)
+    {
+        foreach (Transform child in root) Destroy(child.gameObject);
+        images.Clear();
+
+        var cells = new HashSet<Vector2Int>(shape);
+        foreach (var offset in shape)
         {
             var go = new GameObject("cell", typeof(RectTransform), typeof(Image));
-            go.transform.SetParent(ghostRoot, false);
+            go.transform.SetParent(root, false);
 
             var rt = (RectTransform)go.transform;
             rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0, 1);
 
-
-            // Extend neighbouring cells into the spacing between them
-            // so multi cell items appear as one connected shape.
             float w = cellSize + (cells.Contains(offset + new Vector2Int(1, 0)) ? spacing : 0f);
             float h = cellSize + (cells.Contains(offset + new Vector2Int(0, 1)) ? spacing : 0f);
             rt.sizeDelta = new Vector2(w, h);
@@ -246,9 +322,7 @@ public class InventoryDragDrop : MonoBehaviour
 
             var img = go.GetComponent<Image>();
             img.raycastTarget = false;
-            ghostCells.Add(img);
+            images.Add(img);
         }
-
-        ItemLabels.Add(ghostRoot, heldType, heldShape, cellSize, spacing, Vector2Int.zero);
     }
 }
