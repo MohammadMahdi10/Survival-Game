@@ -73,3 +73,6 @@ crashlytics-build.properties
 
 # Desktop Services Store
 .DS_Store
+
+# Unity/Mono crash logs
+mono_crash.*
