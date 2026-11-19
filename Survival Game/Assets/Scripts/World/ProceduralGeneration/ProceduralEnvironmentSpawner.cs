@@ -1497,9 +1497,6 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
                 continue;
             }
 
-            if (Vector2.Distance(point, worldCentre) > 1950f) {
-                continue;
-            }
 
             biomeGenerator.GetBiomeBlend(x, z, out float snow, out float plains, out float desert, out float swamp);
 

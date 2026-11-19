@@ -66,8 +66,15 @@ public class DistantTerrainGenerator : MonoBehaviour {
     [SerializeField] private Material distantSwampWaterMaterial;
     [SerializeField] private float distantWaterMeshSpacing = 10f;
 
-    [Header("Distant Swamp Trees")]
-    [SerializeField] private int distantSwampTreeCount = 55;
+    [Header("Distant Swamp Vegetation")]
+    [SerializeField] private GameObject[] distantSwampReeds;
+    [SerializeField] private int swampTreesPerChunk = 4;
+    [SerializeField] private int swampReedsPerChunk = 5;
+    [SerializeField] private float distantReedSpacing = 4f;
+    [SerializeField] private float distantReedMinWaterMask = 0.2f;
+    [SerializeField] private float distantReedMaxWaterMask = 0.75f;
+    [SerializeField] private float distantReedScaleMin = 8f;
+    [SerializeField] private float distantReedScaleMax = 12f;
 
 
     private float worldMinX;
@@ -382,10 +389,151 @@ public class DistantTerrainGenerator : MonoBehaviour {
 
         SpawnDistantForestChunks(container.transform, vertices, normals, startX, startZ, width, length, distantPlainsTrees, false);
         SpawnDistantForestChunks(container.transform, vertices, normals, startX, startZ, width, length, distantSnowTrees, true);
-        SpawnDistantObjects(container.transform, vertices, normals, startX, startZ, width, length, distantSwampTrees, distantSwampTreeCount, 2, random);
+        SpawnDistantSwampChunks(container.transform, vertices, normals, startX, startZ, width, length, false);
+        SpawnDistantSwampChunks(container.transform, vertices, normals, startX, startZ, width, length, true);
         SpawnDistantObjects(container.transform, vertices, normals, startX, startZ, width, length, distantCacti, distantCactusCount, 3, random);
         SpawnDistantObjects(container.transform, vertices, normals, startX, startZ, width, length, distantBushes, distantBushCount, 4, random);
         SpawnDistantObjects(container.transform, vertices, normals, startX, startZ, width, length, distantRocks, distantRockCount, 5, random);
+    }
+
+
+    private void SpawnDistantSwampChunks(Transform parent, Vector3[] vertices, Vector3[] normals, float startX, float startZ, float width, float length, bool isReed) {
+        if (environmentSpawner == null) {
+            return;
+        }
+
+        GameObject[] prefabs = isReed ? distantSwampReeds : distantSwampTrees;
+
+        if (prefabs == null || prefabs.Length == 0) {
+            return;
+        }
+
+        float size = Mathf.Max(1f, environmentSpawner.GetDistantChunkSize());
+
+        int minChunkX = Mathf.FloorToInt(startX / size);
+        int maxChunkX = Mathf.CeilToInt((startX + width) / size);
+        int minChunkZ = Mathf.FloorToInt(startZ / size);
+        int maxChunkZ = Mathf.CeilToInt((startZ + length) / size);
+
+        List<Vector2> placedPositions = new List<Vector2>();
+
+        for (int chunkX = minChunkX; chunkX < maxChunkX; chunkX++) {
+            for (int chunkZ = minChunkZ; chunkZ < maxChunkZ; chunkZ++) {
+                float minX = Mathf.Max(startX, chunkX * size);
+                float maxX = Mathf.Min(startX + width, (chunkX + 1) * size);
+                float minZ = Mathf.Max(startZ, chunkZ * size);
+                float maxZ = Mathf.Min(startZ + length, (chunkZ + 1) * size);
+
+                if (minX >= maxX || minZ >= maxZ) {
+                    continue;
+                }
+
+                float centreX = (minX + maxX) * 0.5f;
+                float centreZ = (minZ + maxZ) * 0.5f;
+
+                int baseCount = isReed ? swampReedsPerChunk : swampTreesPerChunk;
+                float chunkAreaFraction = (maxX - minX) * (maxZ - minZ) / (size * size);
+
+                float borderDistance = GetDistanceOutsideMainWorld(centreX, centreZ);
+                float borderBoost = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0f, 350f, borderDistance));
+
+                float densityMultiplier = GetDistantDensityMultiplier(centreX, centreZ);
+                float treeMultiplier = isReed ? 1f : Mathf.Lerp(1f, 2f, borderBoost);
+
+                float expectedCount = baseCount * chunkAreaFraction * densityMultiplier * treeMultiplier;
+
+                System.Random random = new System.Random(unchecked(biomeGenerator.seed + chunkX * 73856093 + chunkZ * 19349663 + (isReed ? 17431 : 27617)));
+
+                int targetCount = Mathf.FloorToInt(expectedCount);
+
+                if (random.NextDouble() < expectedCount - targetCount) {
+                    targetCount++;
+                }
+
+                if (targetCount <= 0) {
+                    continue;
+                }
+
+                int spawned = 0;
+                int attempts = 0;
+                int maxAttempts = targetCount * (isReed ? 300 : 250);
+
+                while (spawned < targetCount && attempts < maxAttempts) {
+                    attempts++;
+
+                    float x = Mathf.Lerp(minX, maxX, (float)random.NextDouble());
+                    float z = Mathf.Lerp(minZ, maxZ, (float)random.NextDouble());
+
+                    biomeGenerator.GetBiomeBlend(x, z, out float snow, out float plains, out float desert, out float swamp);
+
+                    if (swamp < (isReed ? 0.8f : 0.82f)) {
+                        continue;
+                    }
+
+                    float waterMask = biomeGenerator.GetSwampWaterMask(x, z);
+
+                    if (isReed) {
+                        if (waterMask < distantReedMinWaterMask || waterMask > distantReedMaxWaterMask) {
+                            continue;
+                        }
+                    }
+                    else if ((float)random.NextDouble() > environmentSpawner.GetDistantSwampTreeChance(x, z)) {
+                        continue;
+                    }
+
+                    if (!TrySampleDistantMesh(vertices, normals, x, z, startX, startZ, width, length, out float y, out float slope)) {
+                        continue;
+                    }
+
+                    if (slope > environmentSpawner.GetDistantPlainsMaximumSlope()) {
+                        continue;
+                    }
+
+                    float spacing = isReed ? distantReedSpacing : environmentSpawner.GetDistantSwampTreeSpacing();
+                    spacing *= Mathf.Lerp(1f, farSpacingMultiplier, GetDistantVegetationFade(x, z));
+
+                    Vector2 position = new Vector2(x, z);
+                    bool tooClose = false;
+
+                    foreach (Vector2 placed in placedPositions) {
+                        if ((position - placed).sqrMagnitude < spacing * spacing) {
+                            tooClose = true;
+                            break;
+                        }
+                    }
+
+                    if (tooClose) {
+                        continue;
+                    }
+
+                    GameObject prefab = prefabs[random.Next(prefabs.Length)];
+
+                    if (prefab == null) {
+                        continue;
+                    }
+
+                    float spawnY = y + (isReed ? 0.3f : 0f);
+
+                    GameObject instance = Instantiate(prefab, new Vector3(x, spawnY, z), Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f), parent);
+
+                    Vector2 scaleRange = isReed ? new Vector2(distantReedScaleMin, distantReedScaleMax) : environmentSpawner.GetDistantSwampTreeScale();
+
+                    instance.transform.localScale *= Mathf.Lerp(scaleRange.x, scaleRange.y, (float)random.NextDouble());
+
+                    foreach (Collider collider in instance.GetComponentsInChildren<Collider>()) {
+                        collider.enabled = false;
+                    }
+
+                    foreach (Renderer objectRenderer in instance.GetComponentsInChildren<Renderer>()) {
+                        objectRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                        objectRenderer.receiveShadows = false;
+                    }
+
+                    placedPositions.Add(position);
+                    spawned++;
+                }
+            }
+        }
     }
 
     private void SpawnDistantObjects(Transform parent, Vector3[] vertices, Vector3[] normals, float startX, float startZ, float width, float length, GameObject[] prefabs, int targetCount, int objectType, System.Random random) {
