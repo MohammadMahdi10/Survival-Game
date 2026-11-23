@@ -92,6 +92,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
     [SerializeField] private float swampTreeSpacing = 22f;
     [SerializeField] private float swampTreeScaleMin = 2.5f;
     [SerializeField] private float swampTreeScaleMax = 4.5f;
+    [SerializeField] private int swampTreesPerChunk = 4;
 
     /// Starts automatically updating chunk visibility during gameplay.
     /// Finds the chunks created earlier using Generate Vegetation.
@@ -1558,102 +1559,119 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
         }
     }
 
-    /// Spawns swamp trees on wet ground and shallow water areas
-    /// to create a Moisty Mire style swamp feel.
     private void GenerateSwampTrees(Terrain[] terrains, Transform parent, System.Random random, Vector2 worldCentre, float minX, float maxX, float minZ, float maxZ) {
-        if (swampTreePrefabs == null || swampTreePrefabs.Length == 0) {
+        if (swampTreePrefabs == null || swampTreePrefabs.Length == 0 || swampTreesPerChunk <= 0) {
             return;
         }
 
-        List<Vector2> placed = new List<Vector2>();
+        float size = Mathf.Max(1f, chunkSize);
 
-        int spawned = 0;
-        int attempts = 0;
-        int maxAttempts = swampTreeCount * 80;
+        int minChunkX = Mathf.FloorToInt(minX / size);
+        int maxChunkX = Mathf.CeilToInt(maxX / size);
+        int minChunkZ = Mathf.FloorToInt(minZ / size);
+        int maxChunkZ = Mathf.CeilToInt(maxZ / size);
 
-        while (spawned < swampTreeCount && attempts < maxAttempts) {
-            attempts++;
+        List<Vector2> placedPositions = new List<Vector2>();
 
-            float x = Mathf.Lerp(minX, maxX, (float)random.NextDouble());
-            float z = Mathf.Lerp(minZ, maxZ, (float)random.NextDouble());
-            Vector2 point = new Vector2(x, z);
+        for (int chunkX = minChunkX; chunkX < maxChunkX; chunkX++) {
+            for (int chunkZ = minChunkZ; chunkZ < maxChunkZ; chunkZ++) {
+                float startX = Mathf.Max(minX, chunkX * size);
+                float endX = Mathf.Min(maxX, (chunkX + 1) * size);
+                float startZ = Mathf.Max(minZ, chunkZ * size);
+                float endZ = Mathf.Min(maxZ, (chunkZ + 1) * size);
 
-            if (Vector2.Distance(point, worldCentre) < kingdomExclusionRadius) {
-                continue;
-            }
+                if (startX >= endX || startZ >= endZ) {
+                    continue;
+                }
 
-            if (Vector2.Distance(point, worldCentre) > 1950f) {
-                continue;
-            }
+                System.Random chunkRandom = new System.Random(unchecked(biomeGenerator.seed + chunkX * 73856093 + chunkZ * 19349663 + 27617));
 
-            biomeGenerator.GetBiomeBlend(x, z, out float snow, out float plains, out float desert, out float swamp);
+                float areaFraction = (endX - startX) * (endZ - startZ) / (size * size);
+                float expectedCount = swampTreesPerChunk * areaFraction;
+                int targetCount = Mathf.FloorToInt(expectedCount);
 
-            if (swamp < 0.82f) {
-                continue;
-            }
+                if (chunkRandom.NextDouble() < expectedCount - targetCount) {
+                    targetCount++;
+                }
 
-            float waterMask = biomeGenerator.GetSwampWaterMask(x, z);
+                int spawned = 0;
+                int attempts = 0;
+                int maxAttempts = targetCount * 250;
 
+                while (spawned < targetCount && attempts < maxAttempts) {
+                    attempts++;
 
-            float waterSpawnChance = Mathf.Lerp(0.95f, 0.3f, waterMask);
+                    float x = Mathf.Lerp(startX, endX, (float)chunkRandom.NextDouble());
+                    float z = Mathf.Lerp(startZ, endZ, (float)chunkRandom.NextDouble());
 
-            if ((float)random.NextDouble() > waterSpawnChance) {
-                continue;
-            }
+                    Vector2 point = new Vector2(x, z);
 
-            float clusterNoise = Mathf.PerlinNoise(x * 0.003f + biomeGenerator.seed * 0.19f + 211f, z * 0.003f + biomeGenerator.seed * 0.27f + 509f);
+                    if (Vector2.Distance(point, worldCentre) < kingdomExclusionRadius) {
+                        continue;
+                    }
 
-            float treeSpawnChance = Mathf.Lerp(0.2f, 0.85f, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.3f, 0.7f, clusterNoise)));
+                    biomeGenerator.GetBiomeBlend(x, z, out float snow, out float plains, out float desert, out float swamp);
 
-            if ((float)random.NextDouble() > treeSpawnChance) {
-                continue;
-            }
+                    if (swamp < 0.82f) {
+                        continue;
+                    }
 
-            bool tooClose = false;
+                    float spawnChance = GetDistantSwampTreeChance(x, z);
 
-            foreach (Vector2 p in placed) {
-                if (Vector2.Distance(point, p) < swampTreeSpacing) {
-                    tooClose = true;
-                    break;
+                    if ((float)chunkRandom.NextDouble() > spawnChance) {
+                        continue;
+                    }
+
+                    bool tooClose = false;
+
+                    foreach (Vector2 placed in placedPositions) {
+                        if ((point - placed).sqrMagnitude < swampTreeSpacing * swampTreeSpacing) {
+                            tooClose = true;
+                            break;
+                        }
+                    }
+
+                    if (tooClose) {
+                        continue;
+                    }
+
+                    Terrain currentTerrain = GetTerrainAtPosition(terrains, x, z);
+
+                    if (currentTerrain == null) {
+                        continue;
+                    }
+
+                    Vector3 terrainOrigin = currentTerrain.transform.position;
+                    Vector3 terrainSize = currentTerrain.terrainData.size;
+
+                    float u = Mathf.Clamp01((x - terrainOrigin.x) / terrainSize.x);
+                    float v = Mathf.Clamp01((z - terrainOrigin.z) / terrainSize.z);
+
+                    if (currentTerrain.terrainData.GetSteepness(u, v) > maximumSlope) {
+                        continue;
+                    }
+
+                    float y = currentTerrain.SampleHeight(new Vector3(x, 0f, z)) + terrainOrigin.y;
+
+                    if (float.IsNaN(y) || float.IsInfinity(y)) {
+                        continue;
+                    }
+
+                    GameObject prefab = swampTreePrefabs[chunkRandom.Next(swampTreePrefabs.Length)];
+
+                    if (prefab == null) {
+                        continue;
+                    }
+
+                    GameObject tree = Instantiate(prefab, new Vector3(x, y, z), Quaternion.Euler(0f, (float)chunkRandom.NextDouble() * 360f, 0f), GetVegetationParent(x, z, true));
+
+                    float scale = Mathf.Lerp(swampTreeScaleMin, swampTreeScaleMax, (float)chunkRandom.NextDouble());
+                    tree.transform.localScale *= scale;
+
+                    placedPositions.Add(point);
+                    spawned++;
                 }
             }
-
-            if (tooClose) {
-                continue;
-            }
-
-            Terrain currentTerrain = GetTerrainAtPosition(terrains, x, z);
-
-            if (currentTerrain == null) {
-                continue;
-            }
-
-            Vector3 terrainOrigin = currentTerrain.transform.position;
-            Vector3 terrainSize = currentTerrain.terrainData.size;
-
-            float u = Mathf.Clamp01((x - terrainOrigin.x) / terrainSize.x);
-            float v = Mathf.Clamp01((z - terrainOrigin.z) / terrainSize.z);
-
-            if (currentTerrain.terrainData.GetSteepness(u, v) > maximumSlope) {
-                continue;
-            }
-
-            float y = currentTerrain.SampleHeight(new Vector3(x, 0f, z)) + terrainOrigin.y;
-
-            GameObject prefab = swampTreePrefabs[random.Next(swampTreePrefabs.Length)];
-
-            if (prefab == null) {
-                continue;
-            }
-
-            GameObject tree = Instantiate(prefab, new Vector3(x, y, z), Quaternion.identity, parent);
-            tree.transform.Rotate(0f, (float)random.NextDouble() * 360f, 0f);
-
-            float scale = Mathf.Lerp(swampTreeScaleMin, swampTreeScaleMax, (float)random.NextDouble());
-            tree.transform.localScale *= scale;
-
-            placed.Add(point);
-            spawned++;
         }
     }
 

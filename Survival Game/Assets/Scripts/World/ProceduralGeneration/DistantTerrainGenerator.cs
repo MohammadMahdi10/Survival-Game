@@ -372,10 +372,7 @@ public class DistantTerrainGenerator : MonoBehaviour {
         SpawnDistantVegetation(terrainObject.transform, mesh, startX, startZ, width, length);
     }
 
-    /// Generates simplified vegetation on each distant terrain mesh.
-    /// Uses the biome weights to choose which objects belong in each region.
-    private void SpawnDistantVegetation(Transform parent, Mesh mesh, float startX, float startZ, float width, float length)
-    {
+    private void SpawnDistantVegetation(Transform parent, Mesh mesh, float startX, float startZ, float width, float length) {
         GameObject container = new GameObject("DistantVegetation");
         container.transform.SetParent(parent, false);
 
@@ -391,9 +388,142 @@ public class DistantTerrainGenerator : MonoBehaviour {
         SpawnDistantForestChunks(container.transform, vertices, normals, startX, startZ, width, length, distantSnowTrees, true);
         SpawnDistantSwampChunks(container.transform, vertices, normals, startX, startZ, width, length, false);
         SpawnDistantSwampChunks(container.transform, vertices, normals, startX, startZ, width, length, true);
-        SpawnDistantObjects(container.transform, vertices, normals, startX, startZ, width, length, distantCacti, distantCactusCount, 3, random);
+        SpawnDistantCactusClusters(container.transform, vertices, normals, startX, startZ, width, length);
         SpawnDistantObjects(container.transform, vertices, normals, startX, startZ, width, length, distantBushes, distantBushCount, 4, random);
         SpawnDistantObjects(container.transform, vertices, normals, startX, startZ, width, length, distantRocks, distantRockCount, 5, random);
+    }
+
+    private void SpawnDistantCactusClusters(Transform parent, Vector3[] vertices, Vector3[] normals, float startX, float startZ, float width, float length) {
+        if (environmentSpawner == null || distantCacti == null || distantCacti.Length == 0 || distantCactusCount <= 0) {
+            return;
+        }
+
+        float size = Mathf.Max(1f, environmentSpawner.GetDistantChunkSize());
+
+        int minChunkX = Mathf.FloorToInt(startX / size);
+        int maxChunkX = Mathf.CeilToInt((startX + width) / size);
+        int minChunkZ = Mathf.FloorToInt(startZ / size);
+        int maxChunkZ = Mathf.CeilToInt((startZ + length) / size);
+
+        List<Vector2> cactusPositions = new List<Vector2>();
+        int totalSpawned = 0;
+
+        for (int chunkX = minChunkX; chunkX < maxChunkX; chunkX++) {
+            for (int chunkZ = minChunkZ; chunkZ < maxChunkZ; chunkZ++) {
+                if (totalSpawned >= distantCactusCount) {
+                    return;
+                }
+
+                float minX = Mathf.Max(startX, chunkX * size);
+                float maxX = Mathf.Min(startX + width, (chunkX + 1) * size);
+                float minZ = Mathf.Max(startZ, chunkZ * size);
+                float maxZ = Mathf.Min(startZ + length, (chunkZ + 1) * size);
+
+                if (minX >= maxX || minZ >= maxZ) {
+                    continue;
+                }
+
+                float centreX = (minX + maxX) * 0.5f;
+                float centreZ = (minZ + maxZ) * 0.5f;
+
+                System.Random random = new System.Random(unchecked(biomeGenerator.seed + chunkX * 73856093 + chunkZ * 19349663 + 12037));
+
+                float noise = Mathf.PerlinNoise(centreX * 0.002f + biomeGenerator.seed * 0.137f + 173f, centreZ * 0.002f + biomeGenerator.seed * 0.293f + 291f);
+                float density = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.42f, 0.72f, noise));
+
+                int clusters = random.Next(0, 5);
+
+                if ((float)random.NextDouble() > Mathf.Lerp(0.15f, 0.9f, density)) {
+                    clusters = 0;
+                }
+
+                for (int cluster = 0; cluster < clusters && totalSpawned < distantCactusCount; cluster++) {
+                    float groupX = Mathf.Lerp(minX, maxX, (float)random.NextDouble());
+                    float groupZ = Mathf.Lerp(minZ, maxZ, (float)random.NextDouble());
+
+                    biomeGenerator.GetBiomeBlend(groupX, groupZ, out float snow, out float plains, out float desert, out float swamp);
+
+                    if (desert < 0.85f) {
+                        continue;
+                    }
+
+                    int groupSize = random.Next(1, 12);
+                    float groupRadius = Mathf.Lerp(8f, 45f, (float)random.NextDouble());
+
+                    for (int i = 0; i < groupSize && totalSpawned < distantCactusCount; i++) {
+                        for (int attempt = 0; attempt < 20; attempt++) {
+                            float angle = (float)random.NextDouble() * Mathf.PI * 2f;
+                            float distance = Mathf.Pow((float)random.NextDouble(), 1.5f) * groupRadius;
+
+                            float x = groupX + Mathf.Cos(angle) * distance;
+                            float z = groupZ + Mathf.Sin(angle) * distance;
+
+                            if (x < minX || x >= maxX || z < minZ || z >= maxZ) {
+                                continue;
+                            }
+
+                            biomeGenerator.GetBiomeBlend(x, z, out float pointSnow, out float pointPlains, out float pointDesert, out float pointSwamp);
+
+                            if (pointDesert < 0.85f || biomeGenerator.IsInsidePlainsBossArena(x, z)) {
+                                continue;
+                            }
+
+                            if ((float)random.NextDouble() > GetDistantDensityMultiplier(x, z)) {
+                                continue;
+                            }
+
+                            Vector2 point = new Vector2(x, z);
+                            float spacing = 14f * Mathf.Lerp(1f, farSpacingMultiplier, GetDistantVegetationFade(x, z));
+
+                            bool tooClose = false;
+
+                            foreach (Vector2 placed in cactusPositions) {
+                                if ((point - placed).sqrMagnitude < spacing * spacing) {
+                                    tooClose = true;
+                                    break;
+                                }
+                            }
+
+                            if (tooClose) {
+                                continue;
+                            }
+
+                            if (!TrySampleDistantMesh(vertices, normals, x, z, startX, startZ, width, length, out float y, out float slope)) {
+                                continue;
+                            }
+
+                            if (slope > 30f) {
+                                continue;
+                            }
+
+                            GameObject prefab = distantCacti[random.Next(distantCacti.Length)];
+
+                            if (prefab == null) {
+                                continue;
+                            }
+
+                            GameObject cactus = Instantiate(prefab, new Vector3(x, y, z), Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f), parent);
+
+                            float scale = Mathf.Lerp(2.5f, 4f, (float)random.NextDouble());
+                            cactus.transform.localScale *= scale;
+
+                            foreach (Collider collider in cactus.GetComponentsInChildren<Collider>()) {
+                                collider.enabled = false;
+                            }
+
+                            foreach (Renderer cactusRenderer in cactus.GetComponentsInChildren<Renderer>()) {
+                                cactusRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                                cactusRenderer.receiveShadows = false;
+                            }
+
+                            cactusPositions.Add(point);
+                            totalSpawned++;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     }
 
 
@@ -434,13 +564,7 @@ public class DistantTerrainGenerator : MonoBehaviour {
                 int baseCount = isReed ? swampReedsPerChunk : swampTreesPerChunk;
                 float chunkAreaFraction = (maxX - minX) * (maxZ - minZ) / (size * size);
 
-                float borderDistance = GetDistanceOutsideMainWorld(centreX, centreZ);
-                float borderBoost = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0f, 350f, borderDistance));
-
-                float densityMultiplier = GetDistantDensityMultiplier(centreX, centreZ);
-                float treeMultiplier = isReed ? 1f : Mathf.Lerp(1f, 2f, borderBoost);
-
-                float expectedCount = baseCount * chunkAreaFraction * densityMultiplier * treeMultiplier;
+                float expectedCount = baseCount * chunkAreaFraction * GetDistantDensityMultiplier(centreX, centreZ);
 
                 System.Random random = new System.Random(unchecked(biomeGenerator.seed + chunkX * 73856093 + chunkZ * 19349663 + (isReed ? 17431 : 27617)));
 
