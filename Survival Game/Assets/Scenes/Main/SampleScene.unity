@@ -13939,7 +13939,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Camera: {fileID: 1045225120}
   projectile: {fileID: 6045953142179282528, guid: 8a45110b3e8d945a4992c767a0488158, type: 3}
-  speed: 8
+  speed: 20
+  attackCooldownTime: 1
 --- !u!1 &1305210810
 GameObject:
   m_ObjectHideFlags: 0
