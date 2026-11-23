@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.09675569, g: 0.35171568, b: 0.7160293, a: 1}
+  m_IndirectSpecularColor: {r: 0.09751643, g: 0.3510231, b: 0.71831113, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -433,6 +433,15 @@ MonoBehaviour:
     m_Type: 0
     m_ExpectedControlType: 
     m_Id: 98441e97-bbac-4dcb-b2f6-efbe23ca285e
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings: []
+    m_Flags: 0
+  rangedAction:
+    m_Name: 
+    m_Type: 0
+    m_ExpectedControlType: 
+    m_Id: b3924cfd-0b8a-4aa3-b4a0-75cd8f5ee02c
     m_Processors: 
     m_Interactions: 
     m_SingletonActionBindings: []
@@ -1073,7 +1082,6 @@ MonoBehaviour:
   directionalSun: {fileID: 705507994}
   dayText: {fileID: 93412361}
   timeText: {fileID: 1209393397}
-  hardcoreText: {fileID: 0}
   daySkyColor: {r: 0.4, g: 0.7, b: 1, a: 1}
   nightSkyColor: {r: 0.05, g: 0.05, b: 0.15, a: 1}
   dayEquatorColor: {r: 0.7, g: 0.8, b: 0.9, a: 1}
@@ -9925,6 +9933,11 @@ Camera:
   m_CorrespondingSourceObject: {fileID: 1980668614729343846, guid: f0a88388933774a5aa121264ac2b217e, type: 3}
   m_PrefabInstance: {fileID: 1304997870}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &1045225120 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3896725411540310239, guid: f0a88388933774a5aa121264ac2b217e, type: 3}
+  m_PrefabInstance: {fileID: 1304997870}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1059380863
 GameObject:
   m_ObjectHideFlags: 0
@@ -13693,6 +13706,10 @@ PrefabInstance:
       value: Player
       objectReference: {fileID: 0}
     - target: {fileID: 21446480800244620, guid: f0a88388933774a5aa121264ac2b217e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 21446480800244620, guid: f0a88388933774a5aa121264ac2b217e, type: 3}
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
@@ -13703,6 +13720,10 @@ PrefabInstance:
     - target: {fileID: 1106030101206671712, guid: f0a88388933774a5aa121264ac2b217e, type: 3}
       propertyPath: m_Enabled
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1173101912990520246, guid: f0a88388933774a5aa121264ac2b217e, type: 3}
+      propertyPath: m_Layer
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 1980668614729343846, guid: f0a88388933774a5aa121264ac2b217e, type: 3}
       propertyPath: m_ClearFlags
@@ -13723,6 +13744,10 @@ PrefabInstance:
     - target: {fileID: 4609925520607152269, guid: f0a88388933774a5aa121264ac2b217e, type: 3}
       propertyPath: sprintSpeed
       value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: 4787106851788409073, guid: f0a88388933774a5aa121264ac2b217e, type: 3}
+      propertyPath: m_Layer
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 4787106851788409073, guid: f0a88388933774a5aa121264ac2b217e, type: 3}
       propertyPath: m_TagString
@@ -13821,6 +13846,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 21446480800244620, guid: f0a88388933774a5aa121264ac2b217e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1304997881}
+    - targetCorrespondingSourceObject: {fileID: 21446480800244620, guid: f0a88388933774a5aa121264ac2b217e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1304997884}
   m_SourcePrefab: {fileID: 100100000, guid: f0a88388933774a5aa121264ac2b217e, type: 3}
 --- !u!4 &1304997871 stripped
 Transform:
@@ -13877,12 +13905,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerCamera: {fileID: 1045225119}
-  attackRange: 2
+  attackAngle: 120
   weaponStats: {fileID: 1408557285}
   equipment: {fileID: 1723828325}
   dayNightManager: {fileID: 93121383}
   hardcoreDamageMultiplier: 0.75
   worldDifficultyManager: {fileID: 440980378}
+  attackReady: 1
 --- !u!114 &1304997881
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13896,6 +13925,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   stats: {fileID: 1304997877}
+--- !u!114 &1304997884
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1111442679}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56f293b7072504996b9a1199b3ffcda7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Camera: {fileID: 1045225120}
+  projectile: {fileID: 6045953142179282528, guid: 8a45110b3e8d945a4992c767a0488158, type: 3}
+  speed: 8
 --- !u!1 &1305210810
 GameObject:
   m_ObjectHideFlags: 0
