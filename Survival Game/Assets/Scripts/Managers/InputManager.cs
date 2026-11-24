@@ -18,6 +18,7 @@ public class InputManager : MonoBehaviour
     public InputAction sprintAction;
     public InputAction unlockCursorAction;
     public InputAction interactAction;
+    public InputAction rangedAction;
 
     /// Sets up the shared InputManager instance and finds its input actions.
     /// Prevents duplicate managers from creating conflicting input references.
@@ -43,6 +44,7 @@ public class InputManager : MonoBehaviour
         unlockCursorAction = controls.FindAction("Gameplay/UnlockCursor", false);
         sprintAction = controls.FindAction("Gameplay/Sprint", false);
         interactAction = controls.FindAction("Gameplay/Interact", false);
+        rangedAction = controls.FindAction("Gameplay/Ranged", false);
     }
 
     /// Enables the input actions when this component becomes active
