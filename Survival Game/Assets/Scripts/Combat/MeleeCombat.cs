@@ -1,14 +1,16 @@
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 /// Handles the player's melee attacks.
-/// Detects enemies in front of the player and calculates weapon damage,
-/// including elemental bonuses, hardcore mode and world difficulty.
+/// Supports area attacks, elemental damage and difficulty modifiers.
 public class MeleeCombat : MonoBehaviour
 {
+    [Header("Attack Settings")]
     public Camera playerCamera;
-    public float attackRange = 2f;
+    public float attackAngle = 120f;
+
     public WeaponStats weaponStats;
     public EquipmentManager equipment;
 
@@ -19,78 +21,112 @@ public class MeleeCombat : MonoBehaviour
     [Header("World Difficulty")]
     public WorldDifficultyManager worldDifficultyManager;
 
+    public bool attackReady = true;
+    private bool coroutineReady = false;
 
     /// Checks for a left mouse click to trigger a melee attack.
     /// Only attacks when the cursor is locked to prevent clicks
     /// on inventory or menu buttons from triggering attacks.
-
     void Update()
     {
-        if (Input.GetMouseButtonDown(0) && Cursor.lockState == CursorLockMode.Locked)
+        if (Input.GetMouseButtonDown(0) &&
+            Cursor.lockState == CursorLockMode.Locked)
         {
-            DetectHit();
+            if (attackReady)
+            {
+                DetectHit();
+            }
         }
     }
 
-
-    /// Uses a raycast from the player's camera to detect enemies in range.
-    /// Applies weapon damage, elemental bonuses and difficulty modifiers
-    /// before passing the final damage value to the enemy.
-
     void DetectHit()
     {
+        StartCoroutine(attackCooldown(1f));
         WeaponData stats = weaponStats.GetStats(equipment.Equipped);
 
-
-        // Use basic physical damage when no weapon is equipped,
-        // so the player can still attack without a weapon.
-
-        if (stats == null){
-            stats = new WeaponData(1,DamageType.Physical);
+        // Allow unarmed attacks.
+        if (stats == null)
+        {
+            stats = new WeaponData(1, DamageType.Physical, 1f, 90f);
         }
-        float typeBonus = 1f;
-        Ray ray = new Ray(
+
+        // Finds every collider within attack range.
+        Collider[] hits = Physics.OverlapSphere(
             playerCamera.transform.position,
-            playerCamera.transform.forward
+            stats.damageRange
         );
 
-        RaycastHit hit;
+        HashSet<EnemyHealth> hitEnemies = new HashSet<EnemyHealth>();
 
-        if (Physics.Raycast(ray, out hit, attackRange))
+        bool hitSomething = false;
+
+        foreach (Collider hit in hits)
         {
-            Debug.Log("Hit: " + hit.collider.name);
+            EnemyHealth enemy = hit.GetComponentInParent<EnemyHealth>();
 
-            EnemyHealth enemy = hit.collider
-                .GetComponentInParent<EnemyHealth>();
+            if (enemy == null || !hitEnemies.Add(enemy))
+                continue;
 
-            if (enemy != null)
-            {
+            Vector3 direction = enemy.transform.position - playerCamera.transform.position;
+            direction.y = 0f;
+            Vector3 forward = playerCamera.transform.forward;
+            forward.y = 0f;
+            float angle = Vector3.Angle(
+                forward.normalized,
+                direction.normalized
+            );
 
+            if (angle > stats.damageArea / 2f)
+                continue;
 
-                // Fire attacks deal double damage to ice enemies,
-                // rewarding the player for choosing the right weapon.
+            hitSomething = true;
 
-                if (enemy.biomeType == BiomeType.Ice && stats.damageType == DamageType.Fire){
-                    typeBonus = 2f;
-                }
-                float damage = 1f * stats.damageMultiplier * typeBonus;
+            Debug.Log("Hit: " + enemy.name);
 
-                if (dayNightManager != null && dayNightManager.hardcoreMode) {
-                    damage *= hardcoreDamageMultiplier;
-                }
-
-                if (worldDifficultyManager != null) {
-                    float difficulty = Mathf.Max(1f, worldDifficultyManager.worldDifficulty);
-                    damage /= difficulty;
-                }
-
-                enemy.TakeDamage(damage);
-            }
+            ApplyDamage(enemy, stats);
         }
-        else
+
+        if (!hitSomething)
         {
             Debug.Log("Missed!");
         }
     }
 
+    void ApplyDamage(EnemyHealth enemy, WeaponData stats)
+    {
+        float typeBonus = 1f;
+ 
+        if (enemy.biomeType == BiomeType.Ice &&
+            stats.damageType == DamageType.Fire)
+        {
+            typeBonus = 2f;
+        }
+
+        float damage = stats.damageMultiplier * typeBonus;
+
+        if (dayNightManager != null &&
+            dayNightManager.hardcoreMode)
+        {
+            damage *= hardcoreDamageMultiplier;
+        }
+
+        if (worldDifficultyManager != null)
+        {
+            float difficulty = Mathf.Max(
+                1f,
+                worldDifficultyManager.worldDifficulty
+            );
+
+            damage /= difficulty;
+        }
+
+        enemy.TakeDamage(damage);
+    }
+
+    private IEnumerator attackCooldown(float cooldown)
+    {
+        attackReady = false;
+        yield return new WaitForSeconds(cooldown);
+        attackReady = true;
+    }
 }

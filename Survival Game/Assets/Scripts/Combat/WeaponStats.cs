@@ -17,11 +17,15 @@ public class WeaponData
     public float baseDamage;
     public float damageMultiplier;
     public DamageType damageType;
+    public float damageRange;
+    public float damageArea;
 
-    public WeaponData(float damageMultiplier, DamageType damageType)
+    public WeaponData(float damageMultiplier, DamageType damageType, float damageRange, float damageArea)
     {
         this.damageMultiplier = damageMultiplier;
         this.damageType = damageType;
+        this.damageRange = damageRange;
+        this.damageArea = damageArea;
     }
 
     /// Calculates the weapon's total damage using its base damage and multiplier.
@@ -53,11 +57,11 @@ public class WeaponStats : MonoBehaviour
                 weaponStats = new Dictionary<ItemType, WeaponData>
                 {
                     [ItemType.BasicSword] = new WeaponData(
-                        10f, DamageType.Physical
+                        10f, DamageType.Physical, 3f, 120f
                     ),
 
                     [ItemType.FireSword] = new WeaponData(
-                        10f, DamageType.Fire
+                        10f, DamageType.Fire ,3f, 120f
                     ),
                 };
             }
