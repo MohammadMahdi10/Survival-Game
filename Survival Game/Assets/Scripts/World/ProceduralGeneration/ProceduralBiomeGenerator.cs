@@ -210,10 +210,79 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     private float terrainBaseY;
     private bool samplingReady;
 
-    /// Generates matching terrain heights and biome textures across four tiles.
-    /// Shuffles the radial biome sectors using the seed and preserves the Kingdom clearing.
+    private void ResizePlayableWorldTo7500() {
+        if (Application.isPlaying) {
+            return;
+        }
+
+        Terrain[] terrains = { snowTerrain, plainsTerrain, desertTerrain, swampTerrain };
+        HashSet<TerrainData> uniqueData = new HashSet<TerrainData>();
+        float minX = float.PositiveInfinity;
+        float minZ = float.PositiveInfinity;
+        float maxX = float.NegativeInfinity;
+        float maxZ = float.NegativeInfinity;
+
+        foreach (Terrain terrain in terrains) {
+            if (terrain == null || terrain.terrainData == null || !uniqueData.Add(terrain.terrainData)) {
+                return;
+            }
+
+            Vector3 origin = terrain.transform.position;
+            Vector3 extent = terrain.terrainData.size;
+            minX = Mathf.Min(minX, origin.x);
+            minZ = Mathf.Min(minZ, origin.z);
+            maxX = Mathf.Max(maxX, origin.x + extent.x);
+            maxZ = Mathf.Max(maxZ, origin.z + extent.z);
+        }
+
+        float centreX = (minX + maxX) * 0.5f;
+        float centreZ = (minZ + maxZ) * 0.5f;
+        const float newTileSize = 3750f;
+
+        foreach (Terrain terrain in terrains) {
+            Vector3 origin = terrain.transform.position;
+            Vector3 extent = terrain.terrainData.size;
+            bool east = origin.x + extent.x * 0.5f > centreX;
+            bool north = origin.z + extent.z * 0.5f > centreZ;
+
+            UnityEditor.Undo.RecordObject(terrain.transform, "Resize Playable Terrain Position");
+            UnityEditor.Undo.RegisterCompleteObjectUndo(terrain.terrainData, "Resize Playable Terrain Data");
+
+            terrain.terrainData.size = new Vector3(newTileSize, extent.y, newTileSize);
+            terrain.transform.position = new Vector3(centreX + (east ? 0f : -newTileSize), origin.y, centreZ + (north ? 0f : -newTileSize));
+
+            UnityEditor.EditorUtility.SetDirty(terrain.terrainData);
+            UnityEditor.EditorUtility.SetDirty(terrain.transform);
+            terrain.Flush();
+        }
+
+        samplingReady = false;
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+    }
+
     [ContextMenu("Generate World")]
     public void GenerateWorld() {
+        if (!Application.isPlaying) {
+            Terrain[] playableTerrains = { snowTerrain, plainsTerrain, desertTerrain, swampTerrain };
+
+            bool needsResize = false;
+
+            foreach (Terrain terrain in playableTerrains) {
+                if (terrain != null && terrain.terrainData != null) {
+                    Vector3 size = terrain.terrainData.size;
+
+                    if (!Mathf.Approximately(size.x, 3750f) || !Mathf.Approximately(size.z, 3750f)) {
+                        needsResize = true;
+                        break;
+                    }
+                }
+            }
+
+            if (needsResize) {
+                ResizePlayableWorldTo7500();
+            }
+        }
+
         samplingReady = false;
         Terrain[] terrains = { snowTerrain, plainsTerrain, desertTerrain, swampTerrain };
 
@@ -724,7 +793,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
 
         System.Random random = new System.Random(seed + 4729);
 
-        float distance = Mathf.Lerp(1500f, 1700f, (float)random.NextDouble());
+        float distance = Mathf.Lerp(tileExtent.x * 0.6f, tileExtent.x * 0.68f, (float)random.NextDouble());
         float angle = Mathf.Lerp(-35f, 35f, (float)random.NextDouble()) * Mathf.Deg2Rad;
 
         Vector2 rotatedDirection = direction * Mathf.Cos(angle) + perpendicular * Mathf.Sin(angle);

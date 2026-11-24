@@ -94,6 +94,18 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
     [SerializeField] private float swampTreeScaleMax = 4.5f;
     [SerializeField] private int swampTreesPerChunk = 4;
 
+    /// Scales globally-budgeted vegetation with playable land area.
+    /// Chunk-based tree spawning already scales automatically and is unaffected.
+    private float GetPlayableAreaMultiplier() {
+        Terrain terrain = biomeGenerator != null ? biomeGenerator.plainsTerrain : null;
+        if (terrain == null || terrain.terrainData == null) {
+            return 1f;
+        }
+
+        Vector3 size = terrain.terrainData.size;
+        return Mathf.Max(0.1f, size.x * size.z / (2500f * 2500f));
+    }
+
     /// Starts automatically updating chunk visibility during gameplay.
     /// Finds the chunks created earlier using Generate Vegetation.
     private void Start() {
@@ -301,8 +313,9 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
         }
 
         /// Generate the remaining vegetation using the existing biome rules.
-        SpawnEnvironmentObjects(container.transform, terrains, worldCentre, random, rockPrefabs, rockCount, 0.25f, environmentMinimumSpacing);
-        SpawnEnvironmentObjects(container.transform, terrains, worldCentre, random, bushPrefabs, bushCount, 0.85f, environmentMinimumSpacing);
+        float areaMultiplier = GetPlayableAreaMultiplier();
+        SpawnEnvironmentObjects(container.transform, terrains, worldCentre, random, rockPrefabs, Mathf.RoundToInt(rockCount * areaMultiplier), 0.25f, environmentMinimumSpacing);
+        SpawnEnvironmentObjects(container.transform, terrains, worldCentre, random, bushPrefabs, Mathf.RoundToInt(bushCount * areaMultiplier), 0.85f, environmentMinimumSpacing);
 
         SpawnSnowEnvironment(container.transform, terrains, worldCentre);
         SpawnDesertEnvironment(container.transform, terrains, worldCentre);
@@ -354,7 +367,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
 
             float centreDistance = Vector2.Distance(clusterCentre, worldCentre);
 
-            if (centreDistance < kingdomExclusionRadius || centreDistance > 1900f) {
+            if (centreDistance < kingdomExclusionRadius) {
                 continue;
             }
 
@@ -415,7 +428,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
 
                     float distanceFromWorldCentre = Vector2.Distance(point, worldCentre);
 
-                    if (distanceFromWorldCentre < kingdomExclusionRadius || distanceFromWorldCentre > 1950f) {
+                    if (distanceFromWorldCentre < kingdomExclusionRadius) {
                         continue;
                     }
 
@@ -542,9 +555,10 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
 
         int spawned = 0;
         int attempts = 0;
-        int maxAttempts = snowRockCount * 40;
+        int targetSnowRocks = Mathf.RoundToInt(snowRockCount * GetPlayableAreaMultiplier());
+        int maxAttempts = targetSnowRocks * 40;
 
-        while (spawned < snowRockCount && attempts < maxAttempts) {
+        while (spawned < targetSnowRocks && attempts < maxAttempts) {
             attempts++;
 
             float centreX = Mathf.Lerp(minX, maxX, (float)random.NextDouble());
@@ -554,7 +568,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
 
             float worldDistance = Vector2.Distance(clusterCentre, worldCentre);
 
-            if (worldDistance < kingdomExclusionRadius || worldDistance > 1900f) {
+            if (worldDistance < kingdomExclusionRadius) {
                 continue;
             }
 
@@ -611,7 +625,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
 
             clusterCentres.Add(clusterCentre);
 
-            for (int i = 0; i < clusterSize && spawned < snowRockCount; i++) {
+            for (int i = 0; i < clusterSize && spawned < targetSnowRocks; i++) {
                 for (int placementAttempt = 0; placementAttempt < 25; placementAttempt++) {
                     float angle = (float)random.NextDouble() * Mathf.PI * 2f;
                     float distance = Mathf.Sqrt((float)random.NextDouble()) * clusterRadius;
@@ -621,7 +635,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
 
                     Vector2 point = new Vector2(x, z);
 
-                    if (Vector2.Distance(point, worldCentre) < kingdomExclusionRadius || Vector2.Distance(point, worldCentre) > 1950f) {
+                    if (Vector2.Distance(point, worldCentre) < kingdomExclusionRadius) {
                         continue;
                     }
 
@@ -906,7 +920,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
             Vector2 point = new Vector2(x, z);
             float centreDistance = Vector2.Distance(point, worldCentre);
 
-            if (centreDistance < kingdomExclusionRadius || centreDistance > 1950f) {
+            if (centreDistance < kingdomExclusionRadius) {
                 continue;
             }
 
@@ -1003,8 +1017,8 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
     /// areas of sand rather than uniform object placement.
     private void SpawnDesertEnvironment(Transform parent, Terrain[] terrains, Vector2 worldCentre) {
         SpawnDesertCactusClusters(terrains, worldCentre);
-        SpawnDesertObjects(parent, terrains, worldCentre, desertBushPrefabs, desertBushCount, desertBushSpacing, 1);
-        SpawnDesertObjects(parent, terrains, worldCentre, desertRockPrefabs, desertRockCount, desertRockSpacing, 2);
+        SpawnDesertObjects(parent, terrains, worldCentre, desertBushPrefabs, Mathf.RoundToInt(desertBushCount * GetPlayableAreaMultiplier()), desertBushSpacing, 1);
+        SpawnDesertObjects(parent, terrains, worldCentre, desertRockPrefabs, Mathf.RoundToInt(desertRockCount * GetPlayableAreaMultiplier()), desertRockSpacing, 2);
     }
 
 
@@ -1042,6 +1056,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
 
         List<Vector2> cactusPositions = new List<Vector2>();
         int totalSpawned = 0;
+        int targetCacti = Mathf.RoundToInt(cactusCount * GetPlayableAreaMultiplier());
 
         for (int chunkX = minChunkX; chunkX < maxChunkX; chunkX++) {
             for (int chunkZ = minChunkZ; chunkZ < maxChunkZ; chunkZ++) {
@@ -1067,7 +1082,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
                     clusters = 0;
                 }
 
-                for (int cluster = 0; cluster < clusters && totalSpawned < cactusCount; cluster++) {
+                for (int cluster = 0; cluster < clusters && totalSpawned < targetCacti; cluster++) {
                     float groupX = Mathf.Lerp(startX, endX, (float)random.NextDouble());
                     float groupZ = Mathf.Lerp(startZ, endZ, (float)random.NextDouble());
 
@@ -1080,7 +1095,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
                     int groupSize = random.Next(1, 12);
                     float groupRadius = Mathf.Lerp(8f, 45f, (float)random.NextDouble());
 
-                    for (int i = 0; i < groupSize && totalSpawned < cactusCount; i++) {
+                    for (int i = 0; i < groupSize && totalSpawned < targetCacti; i++) {
                         for (int attempt = 0; attempt < 20; attempt++) {
                             float angle = (float)random.NextDouble() * Mathf.PI * 2f;
                             float distance = Mathf.Pow((float)random.NextDouble(), 1.5f) * groupRadius;
@@ -1095,7 +1110,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
                             Vector2 point = new Vector2(x, z);
                             float centreDistance = Vector2.Distance(point, worldCentre);
 
-                            if (centreDistance < kingdomExclusionRadius || centreDistance > 1950f) {
+                            if (centreDistance < kingdomExclusionRadius) {
                                 continue;
                             }
 
@@ -1212,7 +1227,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
             Vector2 clusterCentre = new Vector2(centreX, centreZ);
             float centreDistance = Vector2.Distance(clusterCentre, worldCentre);
 
-            if (centreDistance < kingdomExclusionRadius || centreDistance > 1900f) {
+            if (centreDistance < kingdomExclusionRadius) {
                 continue;
             }
 
@@ -1291,7 +1306,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
                     Vector2 point = new Vector2(x, z);
                     float worldDistance = Vector2.Distance(point, worldCentre);
 
-                    if (worldDistance < kingdomExclusionRadius || worldDistance > 1950f) {
+                    if (worldDistance < kingdomExclusionRadius) {
                         continue;
                     }
 
@@ -1485,9 +1500,10 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
 
         int spawned = 0;
         int attempts = 0;
-        int maxAttempts = swampReedCount * 60;
+        int targetReeds = Mathf.RoundToInt(swampReedCount * GetPlayableAreaMultiplier());
+        int maxAttempts = targetReeds * 60;
 
-        while (spawned < swampReedCount && attempts < maxAttempts) {
+        while (spawned < targetReeds && attempts < maxAttempts) {
             attempts++;
 
             float x = Mathf.Lerp(minX, maxX, (float)random.NextDouble());
