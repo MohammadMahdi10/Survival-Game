@@ -193,10 +193,10 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     private const float PlainsMountainDetailHeight = 35f;
 
     [Header("Plains Boss Cliff")]
-    [SerializeField] private float plainsCliffRadius = 350f;
+    [SerializeField] private float plainsCliffRadius = 700f;
     [SerializeField] private float plainsCliffEdgeWidth = 55f;
-    [SerializeField] private float plainsCliffHeight = 340f;
-    [SerializeField] private float plainsCliffTopVariation = 8f;
+    [SerializeField] private float plainsCliffHeight = 200f;
+    [SerializeField] private float plainsCliffTopVariation = 0f;
 
     private Vector2 plainsCliffCentre;
 
@@ -732,36 +732,24 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         plainsCliffCentre = worldCentre + rotatedDirection * distance;
     }
 
-
-    /// Generates a natural mountain with irregular cliffs
-    /// Blends the mountain into the surrounding Plains terrain while
-    /// preserving a mostly flat peak for a future boss battle.
     private float GetPlainsCliffHeight(float x, float z, float originalHeight) {
         float distance = Vector2.Distance(new Vector2(x, z), plainsCliffCentre);
 
-        float largeNoise = SampleNoise(x, z, 0.002f, 317f, 593f);
-        float mediumNoise = SampleNoise(x, z, 0.006f, 719f, 283f);
-        float detailNoise = SampleNoise(x, z, 0.015f, 431f, 877f);
-
-        float warpedDistance = distance + (largeNoise - 0.5f) * 140f + (mediumNoise - 0.5f) * 35f;
-
-        float summitRadius = plainsCliffRadius * 0.32f;
+        float summitRadius = 150f;
         float mountainRadius = plainsCliffRadius + plainsCliffEdgeWidth;
 
-        float mountainMask = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(summitRadius, mountainRadius, warpedDistance));
-        mountainMask = Mathf.Pow(mountainMask, 0.85f);
+        if (distance >= mountainRadius) {
+            return originalHeight;
+        }
 
-        float summitBlend = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(summitRadius * 0.65f, summitRadius * 1.5f, distance));
+        if (distance <= summitRadius) {
+            return plainsCliffHeight;
+        }
 
-        float ridges = (mediumNoise - 0.5f) * 70f + (detailNoise - 0.5f) * 25f;
-        float mountainHeight = originalHeight + Mathf.Max(0f, plainsCliffHeight - originalHeight) * mountainMask;
+        float progress = Mathf.InverseLerp(mountainRadius, summitRadius, distance);
+        float slopeBlend = Mathf.SmoothStep(0f, 1f, progress);
 
-        mountainHeight += ridges * mountainMask * (1f - summitBlend);
-
-        float summitVariation = (detailNoise - 0.5f) * 2f * plainsCliffTopVariation;
-        float summitHeight = plainsCliffHeight + summitVariation;
-
-        return Mathf.Lerp(mountainHeight, summitHeight, summitBlend);
+        return Mathf.Lerp(originalHeight, plainsCliffHeight, slopeBlend);
     }
 
     private float GetDesertHills(float x, float z) {
@@ -1124,6 +1112,6 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
 
         float distance = Vector2.Distance(new Vector2(x, z), plainsCliffCentre);
 
-        return distance < plainsCliffRadius * 0.4f;
+        return distance < 130f;
     }
 }

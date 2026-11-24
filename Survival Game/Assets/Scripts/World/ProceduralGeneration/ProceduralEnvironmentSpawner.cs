@@ -288,7 +288,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
 
                     tree.transform.Rotate(0f, (float)random.NextDouble() * 360f, 0f);
 
-                    float scale = Mathf.Lerp(0.8f, 2.8f, (float)random.NextDouble());
+                    float scale = Mathf.Lerp(4f, 8f, (float)random.NextDouble());
                     float heightMultiplier = Mathf.Lerp(0.85f, 1.4f, (float)random.NextDouble());
 
                     tree.transform.localScale = Vector3.Scale(tree.transform.localScale, new Vector3(scale, scale * heightMultiplier, scale));
@@ -494,7 +494,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
 
                 GameObject instance = Instantiate(prefab, new Vector3(point.x, y, point.y), Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f), GetVegetationParent(point.x, point.y, false));
 
-                float scale = Mathf.Lerp(0.8f, 1.4f, (float)random.NextDouble());
+                float scale = Mathf.Lerp(2f, 4f, (float)random.NextDouble());
                 instance.transform.localScale *= scale;
 
                 clusterPositions.Add(point);
@@ -692,7 +692,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
 
                     GameObject instance = Instantiate(prefab, new Vector3(x, y, z), Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f), GetVegetationParent(x, z, false));
 
-                    float scale = Mathf.Lerp(0.8f, 1.8f, (float)random.NextDouble());
+                    float scale = Mathf.Lerp(2f, 4f, (float)random.NextDouble());
                     instance.transform.localScale *= scale;
 
                     rockPositions.Add(point);
@@ -853,7 +853,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
                         heightMultiplier = Mathf.Lerp(1.3f, 1.7f, (float)random.NextDouble());
                     }
                     else {
-                        scale = Mathf.Lerp(1.2f, 4f, (float)random.NextDouble());
+                        scale = Mathf.Lerp(6f, 20f, (float)random.NextDouble());
                         heightMultiplier = Mathf.Lerp(1f, 1.6f, (float)random.NextDouble());
                     }
 
@@ -1355,7 +1355,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
 
                     GameObject instance = Instantiate(prefab, new Vector3(x, y, z), Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f), GetVegetationParent(x, z, false));
 
-                    float scale = Mathf.Lerp(2.5f, 4f, (float)random.NextDouble());
+                    float scale = isBush ? Mathf.Lerp(2.5f, 4f, (float)random.NextDouble()) : Mathf.Lerp(4f, 6f, (float)random.NextDouble());
                     instance.transform.localScale *= scale;
 
                     placedPositions.Add(point);
