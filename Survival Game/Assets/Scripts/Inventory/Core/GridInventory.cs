@@ -86,6 +86,26 @@ public class GridInventory : MonoBehaviour
         return null;
     }
 
+    /// Tries to add an item in each of its four rotations, using the first
+    /// rotation that fits. This lets automatic pickup fill awkward gaps
+    /// (e.g. a horizontal space for a vertical sword) the way a player would.
+    public PlacedItem TryAddItemAnyRotation(ItemType type)
+    {
+        Vector2Int[] shape = ItemShapes.GetShape(type);
+        Vector2Int unused = Vector2Int.zero;
+
+        for (int r = 0; r < 4; r++)
+        {
+            for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
+                    if (CanPlace(shape, new Vector2Int(x, y)))
+                        return Place(type, shape, new Vector2Int(x, y));
+
+            shape = ItemShapes.Rotate(shape, ref unused);
+        }
+        return null;
+    }
+
     /// Removes an item from the inventory.
     /// Frees its occupied cells and notifies other scripts of the change.
     public void Remove(PlacedItem item)
