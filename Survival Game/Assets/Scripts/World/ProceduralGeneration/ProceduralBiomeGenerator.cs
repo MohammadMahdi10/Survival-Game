@@ -7,6 +7,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     [SerializeField] private ProceduralEnvironmentSpawner environmentSpawner;
     [SerializeField] private DistantTerrainGenerator distantTerrainGenerator;
     [SerializeField] private ProceduralSwampWater swampWaterGenerator;
+    [SerializeField] private ProceduralSnowCave snowCaveGenerator;
 
     [Header("Four Terrain Tiles")]
     public Terrain snowTerrain;
@@ -437,13 +438,17 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         if (swampWaterGenerator != null) {
             swampWaterGenerator.GenerateSwampWater();
         }
+
+        if (snowCaveGenerator != null) {
+            snowCaveGenerator.GenerateSnowCaveEntrance();
+        }
     }
 
 
     /// Initialises terrain sampling using the existing world settings.
     /// Reconstructs the biome order, noise offsets and world centre
     /// so distant terrain can generate without regenerating the main tiles.
-    private bool InitializeWorldSampling() {
+    private bool InitialiseWorldSampling() {
         Terrain[] terrains = { snowTerrain, plainsTerrain, desertTerrain, swampTerrain };
 
         float minX = float.PositiveInfinity;
@@ -499,7 +504,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     /// Uses the same biome blending, terrain formulas and Kingdom clearing
     /// as the main generator, including positions beyond the current tiles.
     public float SampleWorldHeight(float x, float z) {
-        if (!samplingReady && !InitializeWorldSampling()) {
+        if (!samplingReady && !InitialiseWorldSampling()) {
             return float.NaN;
         }
 
@@ -628,7 +633,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     }
 
     public float GetSwampMudMask(float x, float z, float worldHeight) {
-        if (!samplingReady && !InitializeWorldSampling()) {
+        if (!samplingReady && !InitialiseWorldSampling()) {
             return 0f;
         }
 
@@ -745,7 +750,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
 
     /// Uses the exact same creek paths as terrain carving.
     public float GetSwampWaterMask(float x, float z) {
-        if (!samplingReady && !InitializeWorldSampling()) {
+        if (!samplingReady && !InitialiseWorldSampling()) {
             return 0f;
         }
 
@@ -983,7 +988,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     /// Allows distant terrain to generate large Plains mountains
     /// while respecting the existing radial biome boundaries.
     public float GetPlainsBiomeWeight(float x, float z) {
-        if (!samplingReady && !InitializeWorldSampling()) {
+        if (!samplingReady && !InitialiseWorldSampling()) {
             return 0f;
         }
 
@@ -999,7 +1004,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     /// Allows distant mountains to follow the Snow region
     /// and blend naturally near neighbouring biome boundaries.
     public float GetSnowBiomeWeight(float x, float z) {
-        if (!samplingReady && !InitializeWorldSampling()) {
+        if (!samplingReady && !InitialiseWorldSampling()) {
             return 0f;
         }
 
@@ -1020,7 +1025,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         desert = 0f;
         swamp = 0f;
 
-        if (!samplingReady && !InitializeWorldSampling()) {
+        if (!samplingReady && !InitialiseWorldSampling()) {
             return;
         }
 
@@ -1175,7 +1180,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     }
 
     public bool IsInsidePlainsBossArena(float x, float z) {
-        if (!samplingReady && !InitializeWorldSampling()) {
+        if (!samplingReady && !InitialiseWorldSampling()) {
             return false;
         }
 
