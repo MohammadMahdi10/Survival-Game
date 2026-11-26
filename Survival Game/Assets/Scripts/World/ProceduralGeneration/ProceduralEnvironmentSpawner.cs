@@ -706,7 +706,7 @@ public class ProceduralEnvironmentSpawner : MonoBehaviour {
 
                     GameObject instance = Instantiate(prefab, new Vector3(x, y, z), Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f), GetVegetationParent(x, z, false));
 
-                    float scale = Mathf.Lerp(2f, 4f, (float)random.NextDouble());
+                    float scale = Mathf.Lerp(4f, 7f, (float)random.NextDouble());
                     instance.transform.localScale *= scale;
 
                     rockPositions.Add(point);

@@ -240,6 +240,25 @@ public class ProceduralSnowCave : MonoBehaviour {
 
             CreateLowPolyRock(root, "Mountain Roof Rock", new Vector3(0f, y, z), new Vector3(openingWidth + 5f, 8f, 12f), rockMaterial, random);
         }
+
+        for (int side = -1; side <= 1; side += 2) {
+            for (int i = 0; i < 8; i++) {
+                float z = -2f - i * 4f;
+                float x = side * (halfWidth + RandomRange(random, 1f, 5f));
+                float groundY = GetLocalGroundHeight(root, terrains, x, z);
+                float scale = RandomRange(random, 7f, 11f);
+
+                CreateLowPolyRock(root, "Cave Side Filler", new Vector3(x, groundY + scale * 0.3f, z), new Vector3(scale, scale * 1.3f, scale * 1.5f), i % 3 == 0 ? darkRockMaterial : rockMaterial, random);
+            }
+        }
+
+        for (int i = 0; i < 9; i++) {
+            float x = Mathf.Lerp(-halfWidth, halfWidth, i / 8f);
+            float z = RandomRange(random, -8f, -2f);
+            float y = openingHeight + RandomRange(random, 3f, 6f);
+
+            CreateLowPolyRock(root, "Cave Roof Filler", new Vector3(x, y, z), new Vector3(9f, 7f, 12f), i % 3 == 0 ? darkRockMaterial : rockMaterial, random);
+        }
     }
 
     private void CreateDarkOpening(Transform parent, Vector3 position, float width, float height) {
