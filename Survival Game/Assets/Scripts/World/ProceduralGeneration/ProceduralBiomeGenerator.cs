@@ -7,6 +7,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     [SerializeField] private ProceduralEnvironmentSpawner environmentSpawner;
     [SerializeField] private DistantTerrainGenerator distantTerrainGenerator;
     [SerializeField] private ProceduralSwampWater swampWaterGenerator;
+    [SerializeField] private ProceduralSnowCave snowCaveGenerator;
 
     [Header("Four Terrain Tiles")]
     public Terrain snowTerrain;
@@ -193,10 +194,10 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     private const float PlainsMountainDetailHeight = 35f;
 
     [Header("Plains Boss Cliff")]
-    [SerializeField] private float plainsCliffRadius = 350f;
+    [SerializeField] private float plainsCliffRadius = 700f;
     [SerializeField] private float plainsCliffEdgeWidth = 55f;
-    [SerializeField] private float plainsCliffHeight = 340f;
-    [SerializeField] private float plainsCliffTopVariation = 8f;
+    [SerializeField] private float plainsCliffHeight = 200f;
+    [SerializeField] private float plainsCliffTopVariation = 0f;
 
     private Vector2 plainsCliffCentre;
 
@@ -210,10 +211,79 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     private float terrainBaseY;
     private bool samplingReady;
 
-    /// Generates matching terrain heights and biome textures across four tiles.
-    /// Shuffles the radial biome sectors using the seed and preserves the Kingdom clearing.
+    private void ResizePlayableWorldTo7500() {
+        if (Application.isPlaying) {
+            return;
+        }
+
+        Terrain[] terrains = { snowTerrain, plainsTerrain, desertTerrain, swampTerrain };
+        HashSet<TerrainData> uniqueData = new HashSet<TerrainData>();
+        float minX = float.PositiveInfinity;
+        float minZ = float.PositiveInfinity;
+        float maxX = float.NegativeInfinity;
+        float maxZ = float.NegativeInfinity;
+
+        foreach (Terrain terrain in terrains) {
+            if (terrain == null || terrain.terrainData == null || !uniqueData.Add(terrain.terrainData)) {
+                return;
+            }
+
+            Vector3 origin = terrain.transform.position;
+            Vector3 extent = terrain.terrainData.size;
+            minX = Mathf.Min(minX, origin.x);
+            minZ = Mathf.Min(minZ, origin.z);
+            maxX = Mathf.Max(maxX, origin.x + extent.x);
+            maxZ = Mathf.Max(maxZ, origin.z + extent.z);
+        }
+
+        float centreX = (minX + maxX) * 0.5f;
+        float centreZ = (minZ + maxZ) * 0.5f;
+        const float newTileSize = 3750f;
+
+        foreach (Terrain terrain in terrains) {
+            Vector3 origin = terrain.transform.position;
+            Vector3 extent = terrain.terrainData.size;
+            bool east = origin.x + extent.x * 0.5f > centreX;
+            bool north = origin.z + extent.z * 0.5f > centreZ;
+
+            UnityEditor.Undo.RecordObject(terrain.transform, "Resize Playable Terrain Position");
+            UnityEditor.Undo.RegisterCompleteObjectUndo(terrain.terrainData, "Resize Playable Terrain Data");
+
+            terrain.terrainData.size = new Vector3(newTileSize, extent.y, newTileSize);
+            terrain.transform.position = new Vector3(centreX + (east ? 0f : -newTileSize), origin.y, centreZ + (north ? 0f : -newTileSize));
+
+            UnityEditor.EditorUtility.SetDirty(terrain.terrainData);
+            UnityEditor.EditorUtility.SetDirty(terrain.transform);
+            terrain.Flush();
+        }
+
+        samplingReady = false;
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+    }
+
     [ContextMenu("Generate World")]
     public void GenerateWorld() {
+        if (!Application.isPlaying) {
+            Terrain[] playableTerrains = { snowTerrain, plainsTerrain, desertTerrain, swampTerrain };
+
+            bool needsResize = false;
+
+            foreach (Terrain terrain in playableTerrains) {
+                if (terrain != null && terrain.terrainData != null) {
+                    Vector3 size = terrain.terrainData.size;
+
+                    if (!Mathf.Approximately(size.x, 3750f) || !Mathf.Approximately(size.z, 3750f)) {
+                        needsResize = true;
+                        break;
+                    }
+                }
+            }
+
+            if (needsResize) {
+                ResizePlayableWorldTo7500();
+            }
+        }
+
         samplingReady = false;
         Terrain[] terrains = { snowTerrain, plainsTerrain, desertTerrain, swampTerrain };
 
@@ -368,13 +438,17 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         if (swampWaterGenerator != null) {
             swampWaterGenerator.GenerateSwampWater();
         }
+
+        if (snowCaveGenerator != null) {
+            snowCaveGenerator.GenerateSnowCaveEntrance();
+        }
     }
 
 
     /// Initialises terrain sampling using the existing world settings.
     /// Reconstructs the biome order, noise offsets and world centre
     /// so distant terrain can generate without regenerating the main tiles.
-    private bool InitializeWorldSampling() {
+    private bool InitialiseWorldSampling() {
         Terrain[] terrains = { snowTerrain, plainsTerrain, desertTerrain, swampTerrain };
 
         float minX = float.PositiveInfinity;
@@ -430,7 +504,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     /// Uses the same biome blending, terrain formulas and Kingdom clearing
     /// as the main generator, including positions beyond the current tiles.
     public float SampleWorldHeight(float x, float z) {
-        if (!samplingReady && !InitializeWorldSampling()) {
+        if (!samplingReady && !InitialiseWorldSampling()) {
             return float.NaN;
         }
 
@@ -559,7 +633,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     }
 
     public float GetSwampMudMask(float x, float z, float worldHeight) {
-        if (!samplingReady && !InitializeWorldSampling()) {
+        if (!samplingReady && !InitialiseWorldSampling()) {
             return 0f;
         }
 
@@ -676,7 +750,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
 
     /// Uses the exact same creek paths as terrain carving.
     public float GetSwampWaterMask(float x, float z) {
-        if (!samplingReady && !InitializeWorldSampling()) {
+        if (!samplingReady && !InitialiseWorldSampling()) {
             return 0f;
         }
 
@@ -724,7 +798,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
 
         System.Random random = new System.Random(seed + 4729);
 
-        float distance = Mathf.Lerp(1500f, 1700f, (float)random.NextDouble());
+        float distance = Mathf.Lerp(tileExtent.x * 0.6f, tileExtent.x * 0.68f, (float)random.NextDouble());
         float angle = Mathf.Lerp(-35f, 35f, (float)random.NextDouble()) * Mathf.Deg2Rad;
 
         Vector2 rotatedDirection = direction * Mathf.Cos(angle) + perpendicular * Mathf.Sin(angle);
@@ -732,36 +806,24 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         plainsCliffCentre = worldCentre + rotatedDirection * distance;
     }
 
-
-    /// Generates a natural mountain with irregular cliffs
-    /// Blends the mountain into the surrounding Plains terrain while
-    /// preserving a mostly flat peak for a future boss battle.
     private float GetPlainsCliffHeight(float x, float z, float originalHeight) {
         float distance = Vector2.Distance(new Vector2(x, z), plainsCliffCentre);
 
-        float largeNoise = SampleNoise(x, z, 0.002f, 317f, 593f);
-        float mediumNoise = SampleNoise(x, z, 0.006f, 719f, 283f);
-        float detailNoise = SampleNoise(x, z, 0.015f, 431f, 877f);
-
-        float warpedDistance = distance + (largeNoise - 0.5f) * 140f + (mediumNoise - 0.5f) * 35f;
-
-        float summitRadius = plainsCliffRadius * 0.32f;
+        float summitRadius = 150f;
         float mountainRadius = plainsCliffRadius + plainsCliffEdgeWidth;
 
-        float mountainMask = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(summitRadius, mountainRadius, warpedDistance));
-        mountainMask = Mathf.Pow(mountainMask, 0.85f);
+        if (distance >= mountainRadius) {
+            return originalHeight;
+        }
 
-        float summitBlend = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(summitRadius * 0.65f, summitRadius * 1.5f, distance));
+        if (distance <= summitRadius) {
+            return plainsCliffHeight;
+        }
 
-        float ridges = (mediumNoise - 0.5f) * 70f + (detailNoise - 0.5f) * 25f;
-        float mountainHeight = originalHeight + Mathf.Max(0f, plainsCliffHeight - originalHeight) * mountainMask;
+        float progress = Mathf.InverseLerp(mountainRadius, summitRadius, distance);
+        float slopeBlend = Mathf.SmoothStep(0f, 1f, progress);
 
-        mountainHeight += ridges * mountainMask * (1f - summitBlend);
-
-        float summitVariation = (detailNoise - 0.5f) * 2f * plainsCliffTopVariation;
-        float summitHeight = plainsCliffHeight + summitVariation;
-
-        return Mathf.Lerp(mountainHeight, summitHeight, summitBlend);
+        return Mathf.Lerp(originalHeight, plainsCliffHeight, slopeBlend);
     }
 
     private float GetDesertHills(float x, float z) {
@@ -926,7 +988,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     /// Allows distant terrain to generate large Plains mountains
     /// while respecting the existing radial biome boundaries.
     public float GetPlainsBiomeWeight(float x, float z) {
-        if (!samplingReady && !InitializeWorldSampling()) {
+        if (!samplingReady && !InitialiseWorldSampling()) {
             return 0f;
         }
 
@@ -942,7 +1004,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     /// Allows distant mountains to follow the Snow region
     /// and blend naturally near neighbouring biome boundaries.
     public float GetSnowBiomeWeight(float x, float z) {
-        if (!samplingReady && !InitializeWorldSampling()) {
+        if (!samplingReady && !InitialiseWorldSampling()) {
             return 0f;
         }
 
@@ -963,7 +1025,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         desert = 0f;
         swamp = 0f;
 
-        if (!samplingReady && !InitializeWorldSampling()) {
+        if (!samplingReady && !InitialiseWorldSampling()) {
             return;
         }
 
@@ -1118,12 +1180,12 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     }
 
     public bool IsInsidePlainsBossArena(float x, float z) {
-        if (!samplingReady && !InitializeWorldSampling()) {
+        if (!samplingReady && !InitialiseWorldSampling()) {
             return false;
         }
 
         float distance = Vector2.Distance(new Vector2(x, z), plainsCliffCentre);
 
-        return distance < plainsCliffRadius * 0.4f;
+        return distance < 130f;
     }
 }
