@@ -9,10 +9,9 @@ using UnityEngine.UI;
 /// and quest progression when bosses are defeated.
 public enum BiomeType
 {
-    Default,
+    Plains,
     Ice,
-    Volcano,
-    Forest,
+    Swamp,
     Desert
 }
 
@@ -44,6 +43,8 @@ public class EnemyHealth : MonoBehaviour
     public float dropRadius = 1.0f;
     [SerializeField] private QuestManager questManager;
 
+    public float CurrentHealth => currentHealth;
+    public float MaxHealth => maxHealth;
     void Start()
     {
         currentHealth = maxHealth;
