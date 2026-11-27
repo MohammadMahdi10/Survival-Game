@@ -24,7 +24,6 @@ public class DayNightManager : MonoBehaviour
     [Header("UI References")]
     public TextMeshProUGUI dayText;
     public TextMeshProUGUI timeText;
-    public GameObject hardcoreText;
 
     [Header("Sky Color Settings (No Assets)")]
     public Color daySkyColor = new Color(0.4f, 0.7f, 1f);
@@ -49,15 +48,6 @@ public class DayNightManager : MonoBehaviour
         if (currentTimeOfDay >= 24f) {
             currentTimeOfDay -= 24f;
             currentDay++;
-
-            if (currentDay >= 3 && !hardcoreMode) {
-                hardcoreMode = true;
-                Debug.Log("HARDCORE!!!!");
-            }
-        }
-
-        if (hardcoreText != null) {
-            hardcoreText.SetActive(hardcoreMode);
         }
 
         UpdateLightingAndSky();

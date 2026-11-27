@@ -34,7 +34,7 @@ The prototype focuses on demonstrating the game's main gameplay loop and technic
 - Day and night cycle
 - Quest progression
 - Progressive difficulty scaling
-- Time limited hardcore mode
+- Time limited mode
 - Spaceship repair and victory condition
 
 These features were selected because they form the foundation of the intended game and require multiple gameplay systems to work together.
@@ -63,9 +63,7 @@ The quest tracker displays the current objective and updates as the player progr
 
 The intended full game gives the player approximately 10 in game days to complete the main objective.
 
-For the prototype, the deadline has been shortened to Day 5 to make the hardcore mechanics easier to demonstrate and test.
-
-If the player has not repaired the spaceship before hardcore mode activates, the game becomes more difficult and the player loses the ability to respawn after death.
+If the player has not repaired the spaceship before timer, spaceship is unrepairable and they cannot escape the planet.
 
 ---
 
@@ -97,7 +95,6 @@ If the player has not repaired the spaceship before hardcore mode activates, the
 - Ground items can be collected through the ground inventory panel when the player is nearby.
 - Items must fit within the available inventory cells to be placed.
 - Some items can be rotated to fit into smaller spaces.
-- Hardcore mode prevents respawning after death.
 - Completing the spaceship repair objective activates the victory screen.
 
 ---
@@ -131,7 +128,7 @@ The survival system manages several player attributes:
 
 Stamina is consumed during activities such as sprinting and blocking.
 
-Saturation is continuously being reduced. To saturate, eating or drinking water increases it (for the prototype this has not been implemented). In hardcore mode, this will reduce faster.
+Saturation is continuously being reduced. To saturate, eating or drinking water increases it (for the prototype this has not been implemented).
 
 Health and other survival attributes are displayed through the player HUD, allowing the player to monitor their current condition.
 
@@ -239,8 +236,6 @@ It includes:
 - Tracking the current in-game day
 - A time display on the player HUD
 
-The day counter also supports the prototype's hardcore mode deadline.
-
 In the intended full game, additional mechanics such as increased enemy spawning at night are planned to make night time survival more challenging.
 
 ### H. Quest and Progression System
@@ -287,43 +282,17 @@ This allows the system to be expanded in future development as new equipment, pl
 
 The current world difficulty is displayed on the player's HUD.
 
-### J. Hardcore Mode
-
-**Key Scripts:** `DayNightManager.cs`, `PlayerStats.cs`, `InventoryToggle.cs`
-
-The prototype includes a time based hardcore mode.
-
-For testing purposes, hardcore mode activates on Day 5 if the player has not completed the main objective.
-
-When hardcore mode activates:
-
-- Maximum health and stamina are reduced.
-- Hunger and thirst become harder to manage.
-- Player weapon damage is reduced.
-- The player can no longer respawn after death.
-- A hardcore indicator appears on the HUD.
-
-The purpose of hardcore mode is to create additional tension and demonstrate the consequences of missing the game's intended deadline.
-
-### K. Player Death, Respawning and Victory
+### J. Player Death, Respawning and Victory
 
 **Key Scripts:** `PlayerStats.cs`, `QuestManager.cs`, `SpaceshipInteraction.cs`
 
 The prototype contains both a death condition and a victory condition.
 
-**Normal Mode:**
-- When the player dies, a death screen appears.
-- The player can respawn and continue playing.
-
-**Hardcore Mode:**
-- Death remains permanent for the current attempt.
-- The respawn option is no longer available.
-
 **Victory:**
 - The player defeats the final boss.
 - The repair component is collected.
 - The player returns to the crashed spaceship.
-- Repairing the spaceship completes the main quest and displays the victory screen (for the final game, in hardcore more, the ship is irrepairable so the player can never escape).
+- Repairing the spaceship completes the main quest and displays the victory screen (for the final game, the ship is irreparable so the player can never escape).
 
 These systems provide a complete beginning, progression and ending for the prototype.
 
@@ -332,6 +301,8 @@ These systems provide a complete beginning, progression and ending for the proto
 ## 5. Project Architecture and Folder Organisation
 
 The Unity project is organised by asset type and script responsibility to make development and maintenance easier.
+
+**Note that this is subjected to change as development continues**
 
 ### Main Assets Structure
 
@@ -415,7 +386,7 @@ Assets/
 - Quest manager
 - World difficulty manager
 
-This structure keeps related functionality grouped together and helps different team members locate and modify scripts without unnecessarily affecting unrelated systems.
+This structure keeps related functionality grouped together and helps us locate and modify scripts without unnecessarily affecting unrelated systems.
 
 ---
 
@@ -467,13 +438,11 @@ https://mohammadmahdi10.github.io/Survival-Game/build/index.html
 
 The WebGL build allows the game to be tested without opening the Unity Editor.
 
-For the most complete demonstration of the current enemy AI behaviour, use the Unity Editor version while the browser-specific navigation issue is being investigated.
-
 ---
 
 ## 9. Prototyping Decisions and Technical Challenges
 
-The group prioritised systems that are important to the core survival experience and present meaningful technical challenges. We also prioritised technically risky systems to ensure that the most challenging aspects of the game were tested early in development.
+We prioritised systems that are important to the core survival experience and present meaningful technical challenges. We also prioritised technically risky systems to ensure that the most challenging aspects of the game were tested early in development.
 
 These included:
 
@@ -482,11 +451,10 @@ These included:
 - Implementing enemy navigation and elemental combat.
 - Connecting boss encounters to quest progression.
 - Managing survival attributes alongside changing difficulty modifiers.
-- Implementing hardcore mode and permanent death after a deadline.
 
-These features helped the team explore how the game's main mechanics interact and identify challenges associated with integrating systems developed by different team members.
+These features helped us explore how the game's main mechanics interact and identify challenges associated with integrating systems developed by different members.
 
-The prototype also demonstrates a complete objective based gameplay loop, allowing the team to evaluate how exploration, crafting, combat and progression work together.
+The prototype also demonstrates a complete objective based gameplay loop, allowing us to evaluate how exploration, crafting, combat and progression work together.
 
 ---
 
@@ -506,7 +474,7 @@ Features intended for future development include:
 - **Night-Time Threats:** Increased enemy activity and danger after dark.
 - **Environmental Detail:** More custom models, textures, structures and points of interest.
 
-These features were left out of the current prototype so the team could prioritise developing and testing the essential gameplay mechanics.
+These features were left out of the current prototype so we could prioritise developing and testing the essential gameplay mechanics.
 
 ---
 
@@ -514,7 +482,7 @@ These features were left out of the current prototype so the team could prioriti
 
 The project was developed collaboratively using Git and GitHub.
 
-The team used:
+We used:
 
 - Individual development branches
 - Commits throughout the prototyping process
@@ -523,7 +491,7 @@ The team used:
 - Shared testing and debugging
 - Regular communication to coordinate dependent features
 
-Different team members worked on different gameplay systems before combining their work into the main project.
+Different members of the team worked on different gameplay systems before combining their work into the main project.
 
 ### Repository
 
@@ -537,16 +505,7 @@ The prototype should be assessed using the submitted version of the main branch.
 
 ---
 
-## 12. Known Issues
-
-- Enemy NavMesh movement works in the Unity Editor, but chasing behaviour is currently not functioning correctly in the WebGL build. The boss can still detect and face the player.
-- Some platform-specific rendering warnings may appear in the WebGL browser console.
-
-The prototype is intended to demonstrate the game's key systems and is not a final production release.
-
----
-
-## 13. Team Members
+## 12. Team Members
 
 | Team Member | GitHub Username |
 |---|---|
