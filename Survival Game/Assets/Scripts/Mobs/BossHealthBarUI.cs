@@ -6,6 +6,7 @@ public class BossHealthBarUI : MonoBehaviour
 {
     private static BossHealthBarUI instance;
 
+    // Gained using AI, a singleton pattern so that the code can be applied to all instances of the BossHealthBarUI class, ensuring that only one instance exists at any given time.
     public static BossHealthBarUI Instance
     {
         get
@@ -18,7 +19,6 @@ public class BossHealthBarUI : MonoBehaviour
             return instance;
         }
     }
-
     public static void Hide(EnemyHealth boss)
     {
         if (instance != null)
@@ -52,7 +52,8 @@ public class BossHealthBarUI : MonoBehaviour
     public float fadeSpeed = 3f;
     public float slideSpeed = 10f;
     public float deathLingerTime = 1.5f;  // how long the empty bar stays after the boss dies
-
+    
+    // Code for BossBar class idea  taken from AI
     private class BossBar
     {
         public EnemyHealth boss;
@@ -69,15 +70,13 @@ public class BossHealthBarUI : MonoBehaviour
         public bool leaving;
         public float leaveTime;
     }
-
     private List<BossBar> bars = new List<BossBar>();
     private Font font;
-
     private void Awake()
     {
         if (instance != null && instance != this)
         {
-            Destroy(gameObject);
+            Destroy(this);
             return;
         }
         instance = this;
@@ -94,7 +93,6 @@ public class BossHealthBarUI : MonoBehaviour
         font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
     }
-
     void OnDestroy()
     {
         if (instance == this)
@@ -104,7 +102,6 @@ public class BossHealthBarUI : MonoBehaviour
     }
 
     // API
-
     public void Show(EnemyHealth newBoss, string displayName)
     {
         if (newBoss == null) return;
@@ -130,7 +127,6 @@ public class BossHealthBarUI : MonoBehaviour
         bar.root.anchoredPosition = new Vector2(0f, SlotY(bars.Count));
         bars.Add(bar);
     }
-    
     private void HideBoss(EnemyHealth b)
     {
         BossBar bar = FindBar(b);
@@ -139,9 +135,7 @@ public class BossHealthBarUI : MonoBehaviour
             bar.leaving = true;
             bar.leaveTime = Time.time;
         }
-
     }
-
     private BossBar FindBar(EnemyHealth b)
     {
         foreach (BossBar bar in bars)
@@ -150,7 +144,6 @@ public class BossHealthBarUI : MonoBehaviour
         }
         return null;
     }
-
     private Color GetBiomeColour(BiomeType biome)
     {
         return biome switch
@@ -162,7 +155,6 @@ public class BossHealthBarUI : MonoBehaviour
             _ => Color.white,
         };
     }
-
     void Update()
     {
         // Loop backwards so removing a bar doesn't skip the next one
@@ -189,6 +181,7 @@ public class BossHealthBarUI : MonoBehaviour
         }
     }
 
+    // From AI, how to code the health being filled, and the ghost bar following it
     private void UpdateBar(BossBar bar)
     {
         // Boss was killed: show it empty for a moment, then fade.
@@ -236,6 +229,7 @@ public class BossHealthBarUI : MonoBehaviour
         }
     }
 
+    //Slot spacing accounts for bar height plus my own spacing value
     private float SlotY(int index)
     {
         return -topMargin - (barHeight + spacing) * index;
@@ -278,11 +272,11 @@ public class BossHealthBarUI : MonoBehaviour
         br.sizeDelta = new Vector2(0f, barHeight + 4f);
         br.anchoredPosition = Vector2.zero;
 
-        // Background (inset to leave a thin border)
+        // Background
         Image bg = NewImage("Background", br, backgroundColour);
         Stretch(bg.rectTransform, 2f);
 
-        // Ghost (lagging) bar, then the real fill on top of it
+        // Ghost bar and fill bar (on top of background)
         Image ghost = NewImage("Ghost", bg.rectTransform, ghostColour);
         bar.ghostRect = ghost.rectTransform;
         Stretch(bar.ghostRect, 0f);

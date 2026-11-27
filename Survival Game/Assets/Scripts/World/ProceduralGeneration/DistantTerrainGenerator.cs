@@ -105,13 +105,13 @@ public class DistantTerrainGenerator : MonoBehaviour {
             minZ = Mathf.Min(minZ, terrain.transform.position.z);
         }
 
-        float tileWidth = terrains[0].terrainData.size.x;
-        float tileLength = terrains[0].terrainData.size.z;
+        float innerTileWidth = terrains[0].terrainData.size.x;
+        float innerTileLength = terrains[0].terrainData.size.z;
 
         worldMinX = minX;
-        worldMaxX = minX + tileWidth * 2f;
+        worldMaxX = minX + innerTileWidth * 2f;
         worldMinZ = minZ;
-        worldMaxZ = minZ + tileLength * 2f;
+        worldMaxZ = minZ + innerTileLength * 2f;
 
         Transform previous = transform.Find("GeneratedDistantTerrain");
 
@@ -127,16 +127,21 @@ public class DistantTerrainGenerator : MonoBehaviour {
         GameObject container = new GameObject("GeneratedDistantTerrain");
         container.transform.SetParent(transform, false);
 
-        for (int z = -1; z <= 2; z++) {
-            for (int x = -1; x <= 2; x++) {
-                if (x >= 0 && x <= 1 && z >= 0 && z <= 1) {
+        // Always extend 2500 units from the playable world on each side,
+        // even when the four playable Terrain tiles become larger.
+        const float outerDepth = 2500f;
+        float[] xStarts = { worldMinX - outerDepth, worldMinX, worldMinX + innerTileWidth, worldMaxX };
+        float[] zStarts = { worldMinZ - outerDepth, worldMinZ, worldMinZ + innerTileLength, worldMaxZ };
+        float[] xWidths = { outerDepth, innerTileWidth, innerTileWidth, outerDepth };
+        float[] zLengths = { outerDepth, innerTileLength, innerTileLength, outerDepth };
+
+        for (int z = 0; z < 4; z++) {
+            for (int x = 0; x < 4; x++) {
+                if (x >= 1 && x <= 2 && z >= 1 && z <= 2) {
                     continue;
                 }
 
-                float startX = minX + x * tileWidth;
-                float startZ = minZ + z * tileLength;
-
-                CreateTerrainMesh(container.transform, startX, startZ, tileWidth, tileLength);
+                CreateTerrainMesh(container.transform, xStarts[x], zStarts[z], xWidths[x], zLengths[z]);
             }
         }
     }
