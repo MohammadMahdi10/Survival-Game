@@ -8,6 +8,7 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
     [SerializeField] private DistantTerrainGenerator distantTerrainGenerator;
     [SerializeField] private ProceduralSwampWater swampWaterGenerator;
     [SerializeField] private ProceduralSnowCave snowCaveGenerator;
+    [SerializeField] private ProceduralCrashSpawn crashSpawn;
 
     [Header("Four Terrain Tiles")]
     public Terrain snowTerrain;
@@ -441,6 +442,11 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
 
         if (snowCaveGenerator != null) {
             snowCaveGenerator.GenerateSnowCaveEntrance();
+        }
+
+        if (crashSpawn != null)
+        {
+            crashSpawn.PlacePlayerAndSpaceship();
         }
     }
 
@@ -1187,5 +1193,18 @@ public class ProceduralBiomeGenerator : MonoBehaviour {
         float distance = Vector2.Distance(new Vector2(x, z), plainsCliffCentre);
 
         return distance < 130f;
+    }
+
+    public bool IsNearPlainsBossMountain(float x, float z, float clearance)
+    {
+        if (!samplingReady)
+        {
+            return true;
+        }
+
+        float mountainRadius = plainsCliffRadius + plainsCliffEdgeWidth + Mathf.Max(0f, clearance);
+        float distance = Vector2.Distance(new Vector2(x, z), plainsCliffCentre);
+
+        return distance < mountainRadius;
     }
 }
